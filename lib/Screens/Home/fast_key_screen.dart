@@ -20,9 +20,9 @@ class FastKeyScreen extends StatefulWidget {
 
 class _FastKeyScreenState extends State<FastKeyScreen> {
   final List<String> items = List.generate(18, (index) => 'Bud Light');
-  int _selectedSidebarIndex = -1;
+  int _selectedSidebarIndex = 0; //Build #1.0.2 : By default fast key should be selected after login
   DateTime now = DateTime.now();
-  List<int> quantities = [1, 1];
+  List<int> quantities = [1, 1, 1, 1, 1];
   SidebarPosition sidebarPosition = SidebarPosition.left; // Default to bottom sidebar
   OrderPanelPosition orderPanelPosition = OrderPanelPosition.right; // Default to right
 

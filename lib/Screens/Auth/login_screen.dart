@@ -128,17 +128,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 32),
 
                   // Custom NumPad
-                  CustomNumPad(
-                    onDigitPressed: (value) {
-                      _updatePassword(value);
-                    },
-                    onClearPressed: () {
-                      _clearPassword();
-                    },
-                    onDeletePressed: () {
-                      _deletePassword();
-                    },
-                  ),
+                CustomNumPad( //Build #1.0.2 : Updated the custom num pad code
+                  onDigitPressed: (value) {
+                    _updatePassword(value);
+                  },
+                  onClearPressed: () {
+                    _clearPassword();
+                  },
+                  onDeletePressed: () {
+                    _deletePassword();
+                  },
+                  actionButtonType: ActionButtonType.delete, // SHOW DELETE in Login Screen
+                ),
 
                   const SizedBox(height: 32),
 
@@ -151,6 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         // Handle login press
                         if (kDebugMode) {
                           print("Login pressed");
+                          print("#### Entered OTP : $_password");
                         }
                         /// FastKeyScreen
                         Navigator.pushReplacement(
