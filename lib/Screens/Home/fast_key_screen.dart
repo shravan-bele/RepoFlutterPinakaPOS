@@ -23,8 +23,8 @@ class _FastKeyScreenState extends State<FastKeyScreen> {
   int _selectedSidebarIndex = -1;
   DateTime now = DateTime.now();
   List<int> quantities = [1, 1];
-  SidebarPosition sidebarPosition = SidebarPosition.left; // Default to bottom sidebar
-  OrderPanelPosition orderPanelPosition = OrderPanelPosition.right; // Default to right
+  SidebarPosition sidebarPosition = SidebarPosition.right; // Default to bottom sidebar
+  OrderPanelPosition orderPanelPosition = OrderPanelPosition.left; // Default to right
 
   @override
   Widget build(BuildContext context) {

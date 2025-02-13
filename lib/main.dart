@@ -127,6 +127,7 @@
 //   }
 // }
 import 'package:flutter/material.dart';
+import 'package:pinaka_pos/Screens/Auth/splash_screen.dart';
 import 'package:provider/provider.dart';
 import 'Helper/Extentions/theme_notifier.dart';
 import 'Screens/Auth/login_screen.dart';
@@ -150,7 +151,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: themeService.currentTheme,
-      home: const LoginScreen(),
+      home: const SplashScreen(),
     );
   }
 }

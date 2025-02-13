@@ -14,7 +14,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     // Delay to show splash screen for a few seconds and then navigate to LoginScreen
-    Future.delayed(const Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 1), () {
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
@@ -27,7 +27,7 @@ class _SplashScreenState extends State<SplashScreen> {
             var offsetAnimation = animation.drive(tween);
             return SlideTransition(position: offsetAnimation, child: child);
           },
-          transitionDuration: const Duration(seconds: 3), // Duration of the slide animation
+          transitionDuration: const Duration(seconds: 1), // Duration of the slide animation
         ),
       );
     });

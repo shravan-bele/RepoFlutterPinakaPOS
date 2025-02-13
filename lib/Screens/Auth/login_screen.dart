@@ -114,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 height: 15, // Set appropriate height
                               )
                                   : SvgPicture.asset(
-                                'assets/svg/password_placeholder_fill.svg',
+                                'assets/svg/password_placeholder.svg',
                                 colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
                                 width: 15, // Set appropriate width
                                 height: 15, // Set appropriate height
