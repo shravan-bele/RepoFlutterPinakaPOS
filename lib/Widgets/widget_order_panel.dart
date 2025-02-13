@@ -2,8 +2,9 @@ import 'package:buttons_tabbar/buttons_tabbar.dart';
 import 'package:dotted_line/dotted_line.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_svg/svg.dart';
-
+import 'package:pinaka_pos/Widgets/widget_custom_num_pad.dart';
 
 class RightOrderPanel extends StatefulWidget {
   final String formattedDate;
@@ -22,8 +23,13 @@ class RightOrderPanel extends StatefulWidget {
 }
 
 class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderStateMixin {
-  List<String> tabs = ["Tab #1", "Tab #2"];
-  TabController? _tabController; // Make it nullable to handle reassignments
+  List<Map<String, String>> tabs = [
+    {"title": "#57751", "subtitle": "Tab 1"},
+    {"title": "#57752", "subtitle": "Tab 2"}
+  ];
+  final List<GlobalKey> _tabKeys = [];
+
+  TabController? _tabController;
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -44,38 +50,62 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
 
   void addNewTab() {
     setState(() {
-      tabs.add("Tab #${tabs.length + 1}");
+      tabs.add({"id": UniqueKey().toString(), "title": "#${tabs.length + 57751}", "subtitle": "Tab ${tabs.length + 1}"});
       _initializeTabController();
-      _tabController!.index = tabs.length - 1; // Set newly added tab as selected
+      _tabController!.index = tabs.length - 1;
     });
     _scrollToSelectedTab();
   }
 
   void removeTab(int index) {
     if (tabs.length > 1) {
+      int newIndex = _tabController!.index; // Store current index before removing
+
       setState(() {
         tabs.removeAt(index);
         _initializeTabController();
+
+        // Adjust index to prevent out of range errors
+        if (newIndex >= tabs.length) {
+          newIndex = tabs.length - 1;
+        }
+
+        _tabController!.index = newIndex;
       });
     }
   }
 
   void _scrollToSelectedTab() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    });
-  }
+      if (_scrollController.hasClients) { //Build #1.0.2 : updated thecode for auto scroll while re ordering the tabs
+        RenderBox? selectedTabBox = _tabKeys[_tabController!.index].currentContext?.findRenderObject() as RenderBox?;
+        RenderBox? listBox = _scrollController.position.context.storageContext.findRenderObject() as RenderBox?;
 
-  void scrollTabs(double offset) {
-    _scrollController.animateTo(
-      _scrollController.offset + offset,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
-    );
+        if (selectedTabBox != null && listBox != null) {
+          double selectedTabPosition = selectedTabBox.localToGlobal(Offset.zero, ancestor: listBox).dx;
+          double listViewWidth = listBox.size.width;
+          double tabWidth = selectedTabBox.size.width;
+
+          double scrollOffset = _scrollController.offset;
+
+          if (selectedTabPosition < 0) {
+            // Scroll left if tab is out of view on the left
+            _scrollController.animateTo(
+              scrollOffset + selectedTabPosition,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          } else if (selectedTabPosition + tabWidth > listViewWidth) {
+            // Scroll right if tab is out of view on the right
+            _scrollController.animateTo(
+              scrollOffset + (selectedTabPosition + tabWidth - listViewWidth),
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          }
+        }
+      }
+    });
   }
 
   @override
@@ -98,128 +128,139 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  GestureDetector(
-                    onTap: () => scrollTabs(-100),
-                    child: const Icon(Icons.arrow_left, size: 42, color: Colors.black),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      controller: _scrollController,
+                      child: SizedBox(
+                        height: 68, // Fixed height for the tab bar
+                        child: ReorderableListView( //Build #1.0.2 : updated code for re ordering the tabs
+                          scrollDirection: Axis.horizontal,
+                          buildDefaultDragHandles: false,
+                          shrinkWrap: true,
+                          onReorder: (oldIndex, newIndex) {
+                            if (oldIndex < newIndex) newIndex -= 1;
+
+                            setState(() {
+                              final movedTab = tabs.removeAt(oldIndex);
+                              tabs.insert(newIndex, movedTab);
+
+                              if (_tabController!.index == oldIndex) {
+                                _tabController!.index = newIndex;
+                              } else if (_tabController!.index > oldIndex) {
+                                _tabController!.index -= 1;
+                              }
+                            });
+                          },
+                          proxyDecorator: (Widget child, int index, Animation<double> animation) {
+                            return Material(
+                              elevation: 0, // Remove shadow
+                              color: Colors.transparent, // Make background transparent
+                              child: child,
+                            );
+                          },
+                          children: List.generate(tabs.length, (index) {
+                            final bool isSelected = _tabController!.index == index;
+                            _tabKeys.add(GlobalKey());
+
+                            return Padding(
+                              key: _tabKeys[index],
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+                              child: ReorderableDragStartListener(
+                                index: index,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _tabController!.index = index;
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? Colors.white : Colors.grey.shade400,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              tabs[index]["title"]!,
+                                              style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                                            ),
+                                            Text(
+                                              tabs[index]["subtitle"]!,
+                                              style: const TextStyle(color: Colors.black54, fontSize: 12),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(width: 40),
+                                        if (tabs.length > 1)
+                                          GestureDetector(
+                                            onTap: () {
+                                              setState(() {
+                                                if (_tabController!.index == index) {
+                                                  if (index == tabs.length - 1) {
+                                                    _tabController!.index = index - 1;
+                                                  }
+                                                } else if (_tabController!.index > index) {
+                                                  _tabController!.index -= 1;
+                                                }
+                                                tabs.removeAt(index);
+                                              });
+                                            },
+                                            child: const Icon(Icons.close, size: 18, color: Colors.red),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        )
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  Text("${tabs.length}", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () => scrollTabs(100),
-                    child: const Icon(Icons.arrow_right, size: 42, color: Colors.black),
-                  ),
-                  const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: addNewTab,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      minimumSize: const Size(40, 40),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      minimumSize: const Size(50, 56),
                     ),
                     child: const Text("+", style: TextStyle(color: Colors.black87, fontSize: 16)),
                   ),
                 ],
               ),
             ),
-            Expanded(
-              child: Column(
-                children: [
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    controller: _scrollController,
-                    child: ButtonsTabBar(
-                      controller: _tabController, // Attach the TabController
-                      labelStyle: const TextStyle(color: Colors.black, fontSize: 16),
-                      unselectedLabelStyle: const TextStyle(color: Colors.black),
-                      backgroundColor: Colors.white,
-                      unselectedBackgroundColor: Colors.grey.shade400,
-                      borderWidth: 0,
-                      radius: 10,
-                      height: 60,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      onTap: (index) {
-                        setState(() {
-                          _tabController!.index = index;
-                          if (kDebugMode) {
-                            print("#### Selected Tab : $index");
-                          }
-                        });
-                      },
-                      tabs: List.generate(tabs.length, (index) {
-                        return Tab(
-                          child: SizedBox(
-                            width: 80,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  tabs[index],
-                                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                                ),
-                                if (tabs.length > 1)
-                                  GestureDetector(
-                                    onTap: () => removeTab(index),
-                                    child: const Icon(Icons.close, size: 16, color: Colors.red),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }),
-                    ),
-                  ),
-                  Expanded(child: buildCurrentOrder()),
-                ],
-              ),
-            ),
+            Expanded(child: buildCurrentOrder()),
           ],
         ),
       ),
     );
   }
-
 // Current Order UI
   Widget buildCurrentOrder() {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  RichText(
-                    text: const TextSpan(
-                      children: [
-                        TextSpan(
-                          text: "Current Order ",
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
-                        ),
-                        TextSpan(
-                          text: "12(2)",
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Text(
-                    "#57752",
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black),
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(widget.formattedDate,
                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black54)),
-                  Text(widget.formattedTime, style: const TextStyle(fontSize: 12, color: Colors.black38)),
+                  const SizedBox(width: 8),
+                  Text(widget.formattedTime, style: const TextStyle(fontSize: 14, color: Colors.black38)),
                 ],
               ),
             ],
@@ -238,141 +279,103 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
           child: ListView.builder(
             itemCount: widget.quantities.length,
             itemBuilder: (context, index) {
-              return Container(
-                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 5,
-                      spreadRadius: 1,
-                    )
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end, // Align to the right
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,  // Align children at the top
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: SizedBox( // Ensuring Slidable matches the item height
+                  height: 90, // Adjust to match your item height
+                  child: Slidable( //Build #1.0.2 : added code for delete the items in list
+                    key: ValueKey(index),
+                    closeOnScroll: true,
+                    direction: Axis.horizontal,
+                    endActionPane: ActionPane(
+                      motion: const DrawerMotion(),
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: SvgPicture.asset(
-                            'assets/svg/password_placeholder.svg',
-                            height: 30,
-                            width: 30,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        const Expanded(
+                        CustomSlidableAction(
+                          onPressed: (context) {
+                            setState(() {
+                              widget.quantities.removeAt(index);
+                            });
+                          },
+                          backgroundColor: Colors.transparent, // No background color
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text("Bud Light", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                              Text("\$0.99", style: TextStyle(color: Colors.black54)),
+                              Icon(Icons.delete, color: Colors.red), // Ensures red tint
+                              const SizedBox(height: 4),
+                              const Text('Delete', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ),
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.start,  // Align text to the top
+                      ],
+                    ),
+                    child: GestureDetector(
+                      onTap: () {
+                        showNumPadDialog(context, "Bud Light Test", (selectedQuantity) {
+                          if (kDebugMode) {
+                            print("Selected Quantity: $selectedQuantity");
+                          }
+                        });
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 5,
+                              spreadRadius: 1,
+                            )
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text(
-                              "\$${(widget.quantities[index] * 0.99).toStringAsFixed(2)}",
-                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: SvgPicture.asset(
+                                    'assets/svg/password_placeholder.svg',
+                                    height: 30,
+                                    width: 30,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Bud Light Length was too long for test".length > 15
+                                            ? '${"Bud Light Length was too long for test".substring(0, 15)}...'
+                                            : "Bud Light",
+                                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                      ),
+                                      const Text("6 * \$0.99", style: TextStyle(color: Colors.black54)),
+                                    ],
+                                  ),
+                                ),
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      "\$${(widget.quantities[index] * 0.99).toStringAsFixed(2)}",
+                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween, // Align left and right
-                      children: [
-                        // Delete Button (Left Side)
-                        Container(
-                          width: 30, // Ensuring uniform size
-                          height: 30, // Same height as other buttons
-                          // decoration: BoxDecoration(
-                          //   border: Border.all(color: Colors.red),
-                          //   borderRadius: BorderRadius.circular(8),
-                          // ),
-                          child: IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            iconSize: 20,
-                            padding: EdgeInsets.zero, // Remove extra padding
-                            onPressed: () {
-                              print("Delete button tapped at index $index");
-                            },
-                          ),
-                        ),
-                        // Row for (-), count, (+)
-                        Row(
-                          children: [
-                            // Remove (-) Button
-                            Container(
-                              width: 30, // Ensuring uniform size
-                              height: 30, // Same height as count box
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.black54),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: IconButton(
-                                icon: const Icon(Icons.remove, color: Colors.black),
-                                iconSize: 20,
-                                padding: EdgeInsets.zero, // Remove extra padding
-                                onPressed: () {
-                                  setState(() {
-                                    if (widget.quantities[index] > 1) {
-                                      widget.quantities[index]--;
-                                    }
-                                  });
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            // Count Box
-                            Container(
-                              width: 30, // Ensuring uniform size
-                              height: 30, // Same height as buttons
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.black54),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                "${widget.quantities[index]}",
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            // Add (+) Button
-                            Container(
-                              width: 30, // Ensuring uniform size
-                              height: 30, // Same height as count box
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.black54),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: IconButton(
-                                icon: const Icon(Icons.add, color: Colors.black),
-                                iconSize: 20,
-                                padding: EdgeInsets.zero, // Remove extra padding
-                                onPressed: () {
-                                  setState(() {
-                                    widget.quantities[index]++;
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               );
             },
@@ -491,6 +494,113 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
           ),
         )
       ],
+    );
+  }
+
+  /// //Build #1.0.2 : Added showNumPadDialog if user tap on order layout list item
+  void showNumPadDialog(BuildContext context, String itemName, Function(int) onQuantitySelected) {
+    TextEditingController controller = TextEditingController();
+    int quantity = 0;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            void updateQuantity(int newQuantity) {
+              setState(() {
+                quantity = newQuantity;
+                controller.text = quantity == 0 ? "" : quantity.toString();
+              });
+            }
+
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              insetPadding: EdgeInsets.symmetric(horizontal: 40, vertical: 100),
+              child: Container(
+                width: 600,
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Title
+                    Text("Enter Quantity for", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+                    Text(itemName, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 12),
+
+                    // TextField with + and - buttons
+                    Container(
+                      width: 500,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade400, width: 1.5),
+                        color: Colors.grey.shade100,
+                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 20), // Match NumPad padding
+                      child: Row(
+                        children: [
+                          // Decrement Button
+                          IconButton(
+                            icon: Icon(Icons.remove_circle, size: 32, color: Colors.redAccent),
+                            onPressed: () {
+                              if (quantity > 0) updateQuantity(quantity - 1);
+                            },
+                          ),
+
+                          // Quantity TextField
+                          Expanded(
+                            child: TextField(
+                              controller: controller,
+                              textAlign: TextAlign.center,
+                              readOnly: true,
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: controller.text.isEmpty ? FontWeight.normal : FontWeight.bold,
+                                color: controller.text.isEmpty ? Colors.grey : Colors.black87, // Fix: Color updates correctly
+                              ),
+                              decoration: InputDecoration(
+                                border: InputBorder.none,
+                                hintText: "00", // Fix: Shows properly when empty
+                                hintStyle: TextStyle(fontSize: 28, color: Colors.grey),
+                                contentPadding: EdgeInsets.symmetric(vertical: 12), // Fix: Consistent padding
+                              ),
+                            ),
+                          ),
+
+                          // Increment Button
+                          IconButton(
+                            icon: Icon(Icons.add_circle, size: 32, color: Colors.green),
+                            onPressed: () {
+                              updateQuantity(quantity + 1);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 16),
+
+                    // CustomNumPad with OK button
+                    CustomNumPad(
+                      onDigitPressed: (digit) {
+                        setState(() {
+                          int newQty = int.tryParse((controller.text.isEmpty ? "0" : controller.text) + digit) ?? quantity;
+                          updateQuantity(newQty);
+                        });
+                      },
+                      onClearPressed: () => updateQuantity(0),
+                      onConfirmPressed: () {
+                        onQuantitySelected(quantity);
+                        Navigator.pop(context);
+                      },
+                      actionButtonType: ActionButtonType.ok, // OK instead of Delete
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

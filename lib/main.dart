@@ -127,10 +127,9 @@
 //   }
 // }
 import 'package:flutter/material.dart';
-import 'package:pinaka_pos/Screens/Auth/splash_screen.dart';
 import 'package:provider/provider.dart';
 import 'Helper/Extentions/theme_notifier.dart';
-import 'Screens/Auth/login_screen.dart';
+import 'Screens/Auth/splash_screen.dart';
 
 
 void main() {
@@ -148,10 +147,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeService = Provider.of<ThemeNotifier>(context);
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: themeService.currentTheme,
-      home: const SplashScreen(),
+    return SafeArea(  //Build #1.0.2 : Fixed - status bar overlapping with design
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: themeService.currentTheme,
+        home: SplashScreen(),
+      ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 
 class NestedGridWidget extends StatefulWidget {
   const NestedGridWidget({super.key});
@@ -16,6 +17,8 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
 
   int currentLevel = 0;
   List<String> navigationPath = ["Home"];
+  int? deletingIndex; //Build #1.0.2
+  bool isLoading = false;
 
   void _onItemSelected(int index) {
     if (currentLevel + 1 < nestedItems.length) {
@@ -44,6 +47,40 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
     }
   }
 
+  Future<void> _deleteItem(int index) async { //Build #1.0.2 : added delete and cancel floating buttons for long press of grid item
+    setState(() {
+      isLoading = true;
+    });
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    final bool apiSuccess = true;
+    setState(() {
+      isLoading = false;
+    });
+
+    if (apiSuccess) {
+      setState(() {
+        nestedItems[currentLevel].removeAt(index);
+        deletingIndex = null;
+      });
+    } else { // show alert if deletion failed
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text("Error"),
+          content: const Text("Failed to delete the item. Please try again."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("OK"),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Expanded(
@@ -59,10 +96,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                     style: ElevatedButton.styleFrom(
                       side: const BorderSide(color: Colors.black),
                     ),
-                    child: const Text(
-                      "Back",
-                      style: TextStyle(color: Colors.black),
-                    ),
+                    child: const Text("Back", style: TextStyle(color: Colors.black)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -101,7 +135,9 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
           Expanded(
             child: Container(
               color: Colors.grey.shade100,
-              child: GridView.builder(
+              child: isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : GridView.builder(
                 padding: const EdgeInsets.all(16),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,
@@ -112,42 +148,70 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                 itemCount: nestedItems[currentLevel].length,
                 itemBuilder: (context, index) {
                   return GestureDetector(
-                    onTap: () => _onItemSelected(index),
-                    child: Card(
-                      elevation: 4,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.image, size: 80, color: Colors.grey),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    nestedItems[currentLevel][index],
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
+                    onTap: () => _onItemSelected(index), // Tap
+                    onLongPress: () { //Build #1.0.2 : Long press code added
+                      setState(() {
+                        deletingIndex = index;
+                      });
+                    },
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Card(
+                          elevation: 4,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.image, size: 80, color: Colors.grey),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        nestedItems[currentLevel][index],
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 4),
-                                  const Text(
-                                    '\$0.99',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
-                      ),
+                        if (deletingIndex == index)
+                          Positioned(
+                            top: -20,
+                            right: 0,
+                            child: Row(
+                              children: [
+                                FloatingActionButton(
+                                  mini: true,
+                                  backgroundColor: Colors.red,
+                                  onPressed: () => _deleteItem(index),
+                                  child: const Icon(Icons.delete, color: Colors.white),
+                                ),
+                                const SizedBox(width: 0),
+                                FloatingActionButton(
+                                  mini: true,
+                                  backgroundColor: Colors.grey,
+                                  onPressed: () {
+                                    setState(() {
+                                      deletingIndex = null;
+                                    });
+                                  },
+                                  child: const Icon(Icons.close, color: Colors.white),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                   );
                 },

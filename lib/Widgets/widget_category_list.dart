@@ -132,11 +132,6 @@ class _CategoryListState extends State<CategoryList> {
               ),
             ),
           ),
-          _buildScrollButton(Icons.add, (){
-
-          } ),
-          const SizedBox(width: 8),
-
           // Show right scroll button if needed
           if (_showRightArrow)
             _buildScrollButton(Icons.arrow_forward_ios, () {
@@ -147,6 +142,12 @@ class _CategoryListState extends State<CategoryList> {
                 curve: Curves.easeInOut,
               );
             }),
+
+           const SizedBox(width: 8),
+
+          _buildScrollButton(Icons.add, (){ //Build #1.0.2 : changed add (+) button to arrow right side in tab section
+
+          }),
         ],
       ),
     );
