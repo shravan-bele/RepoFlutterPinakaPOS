@@ -1,5 +1,9 @@
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'dart:async';
+import 'package:image_picker/image_picker.dart';
+import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 
 class NestedGridWidget extends StatefulWidget {
   const NestedGridWidget({super.key});
@@ -9,22 +13,49 @@ class NestedGridWidget extends StatefulWidget {
 }
 
 class _NestedGridWidgetState extends State<NestedGridWidget> {
-  List<List<String>> nestedItems = [
-    ["Item 1", "Item 2", "Item 3"],
-    ["SubItem 1", "SubItem 2"],
-    ["SubSubItem 1"]
+  // Nested items with different icons and titles
+  List<List<Map<String, dynamic>>> nestedItems = [
+    [
+      {"title": "Apple", "icon": Icons.apple, "price": "\$0.99", "image": "https://via.placeholder.com/50"},
+      {"title": "Banana", "icon": Icons.local_grocery_store, "price": "\$1.99", "image": "https://via.placeholder.com/50"},
+      {"title": "Carrot", "icon": Icons.eco, "price": "\$2.99", "image": "https://via.placeholder.com/50"},
+    ],
+    [
+      {"title": "Milk", "icon": Icons.local_drink, "price": "\$3.99", "image": "https://via.placeholder.com/50"},
+      {"title": "Bread", "icon": Icons.bakery_dining, "price": "\$4.99", "image": "https://via.placeholder.com/50"},
+      {"title": "Cheese", "icon": Icons.lunch_dining, "price": "\$5.99", "image": "https://via.placeholder.com/50"},
+    ],
   ];
 
   int currentLevel = 0;
   List<String> navigationPath = ["Home"];
-  int? deletingIndex; //Build #1.0.2
   bool isLoading = false;
+  List<int?> reorderedIndices = []; // Track reordered indices for each nested list
+
+  File? _pickedImage;
+  final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize reorderedIndices for each nested list
+    reorderedIndices = List.filled(nestedItems.length, null);
+  }
+
+  Future<void> _pickImage() async {
+    final XFile? imageFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (imageFile != null) {
+      setState(() {
+        _pickedImage = File(imageFile.path);
+      });
+    }
+  }
 
   void _onItemSelected(int index) {
     if (currentLevel + 1 < nestedItems.length) {
       setState(() {
         currentLevel++;
-        navigationPath.add(nestedItems[currentLevel - 1][index]);
+        navigationPath.add(nestedItems[currentLevel - 1][index]["title"]);
       });
     }
   }
@@ -47,42 +78,151 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
     }
   }
 
-  Future<void> _deleteItem(int index) async { //Build #1.0.2 : added delete and cancel floating buttons for long press of grid item
+  Future<void> _deleteItem(int listIndex, int itemIndex) async {
     setState(() {
-      isLoading = true;
+      nestedItems[listIndex].removeAt(itemIndex);
+      reorderedIndices[listIndex] = null; // Reset reordered index after deletion
     });
+  }
 
-    await Future.delayed(const Duration(seconds: 2));
+  Future<void> _showAddItemDialog(int listIndex) async { //Build #1.0.4
+    final TextEditingController searchController = TextEditingController();
+    List<Map<String, dynamic>> searchResults = [];
+    Map<String, dynamic>? selectedProduct;
 
-    final bool apiSuccess = true;
-    setState(() {
-      isLoading = false;
-    });
+    Future<void> searchProducts(String query) async {
+      if (query.isEmpty) {
+        setState(() {
+          searchResults.clear();
+        });
+        return;
+      }
 
-    if (apiSuccess) {
-      setState(() {
-        nestedItems[currentLevel].removeAt(index);
-        deletingIndex = null;
-      });
-    } else { // show alert if deletion failed
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text("Error"),
-          content: const Text("Failed to delete the item. Please try again."),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("OK"),
+      final response = await http.get(Uri.parse('https://your-api-endpoint.com/search?q=$query'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          searchResults = List<Map<String, dynamic>>.from(data['products']);
+        });
+      } else {
+        throw Exception('Failed to load products');
+      }
+    }
+
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(builder: (context, setStateDialog) {
+          return AlertDialog(
+            title: const Text('Search and Add Item'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: searchController,
+                    decoration: const InputDecoration(
+                      labelText: 'Search Item',
+                      hintText: 'Type to search...',
+                    ),
+                    onChanged: (value) {
+                      searchProducts(value);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  if (searchResults.isNotEmpty)
+                    SizedBox(
+                      height: 200,
+                      child: ListView.builder(
+                        itemCount: searchResults.length,
+                        itemBuilder: (context, index) {
+                          final product = searchResults[index];
+                          return ListTile(
+                            title: Text(product['title']),
+                            subtitle: Text(product['price']),
+                            onTap: () {
+                              setStateDialog(() {
+                                selectedProduct = product;
+                              });
+                            },
+                            selected: selectedProduct == product,
+                            selectedTileColor: Colors.grey[300],
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ],
-        ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: selectedProduct != null
+                    ? () {
+                  setState(() {
+                    nestedItems[listIndex].add({
+                      "title": selectedProduct!['title'],
+                      "price": selectedProduct!['price'],
+                      "image": selectedProduct!['image'] ?? "https://via.placeholder.com/50",
+                      "icon": Icons.add,
+                    });
+                  });
+                  Navigator.of(context).pop();
+                }
+                    : null,
+                child: const Text('Add'),
+              ),
+            ],
+          );
+        });
+      },
+    );
+  }
+
+  Widget _buildImage(String imagePath) {
+    if (imagePath.startsWith("http")) {
+      return Image.network(
+        imagePath,
+        width: 50,
+        height: 50,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: 50,
+            height: 50,
+            color: Colors.grey.shade300,
+            child: const Icon(Icons.broken_image, color: Colors.grey),
+          );
+        },
+      );
+    } else {
+      return Image.file(
+        File(imagePath),
+        width: 50,
+        height: 50,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: 50,
+            height: 50,
+            color: Colors.grey.shade300,
+            child: const Icon(Icons.broken_image, color: Colors.grey),
+          );
+        },
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentList = nestedItems[currentLevel];
+    final totalCount = currentList.length + 1;
+
     return Expanded(
       child: Column(
         children: [
@@ -134,88 +274,126 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
             ),
           Expanded(
             child: Container(
-              color: Colors.grey.shade100,
+              color: Colors.transparent,
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : GridView.builder(
-                padding: const EdgeInsets.all(16),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  mainAxisSpacing: 20,
-                  crossAxisSpacing: 10,
-                  childAspectRatio: 2.2,
-                ),
-                itemCount: nestedItems[currentLevel].length,
-                itemBuilder: (context, index) {
-                  return GestureDetector(
-                    onTap: () => _onItemSelected(index), // Tap
-                    onLongPress: () { //Build #1.0.2 : Long press code added
-                      setState(() {
-                        deletingIndex = index;
+                  : Material(
+                    color: Colors.transparent, // Prevents transparency issues
+                    child: ReorderableGridView.builder(
+                       padding: const EdgeInsets.all(16),
+                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                       crossAxisCount: 3,
+                       mainAxisSpacing: 20,
+                       crossAxisSpacing: 10,
+                       childAspectRatio: 2.2,
+                      ),
+                       itemCount: totalCount,
+                       onReorder: (oldIndex, newIndex) {
+                       if (oldIndex == 0 || newIndex == 0) return;
+                       final adjustedOldIndex = oldIndex - 1;
+                       final adjustedNewIndex = newIndex - 1;
+                       setState(() {
+                       final item = currentList.removeAt(adjustedOldIndex);
+                       currentList.insert(adjustedNewIndex, item);
+                       reorderedIndices[currentLevel] = adjustedNewIndex; // Set reordered index for current list
                       });
-                    },
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Card(
-                          elevation: 4,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.image, size: 80, color: Colors.grey),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                     },
+                    itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return Container(
+                        key: const ValueKey('add_button'),
+                        child: GestureDetector(
+                          onTap: () => _showAddItemDialog(currentLevel),
+                          child: Card(
+                            elevation: 4,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: const [
+                                Icon(Icons.add, size: 50, color: Colors.green),
+                                SizedBox(height: 8),
+                                Text("Add Item", style: TextStyle(color: Colors.green)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    } else {
+                      final itemIndex = index - 1;
+                      return Container(
+                        key: ValueKey('grid_item_${currentLevel}_${itemIndex}_${currentList[itemIndex]["title"]}'),
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            GestureDetector(
+                              onTap: () => _onItemSelected(itemIndex),
+                              child: Card(
+                                elevation: 4,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Row(
                                     children: [
-                                      Text(
-                                        nestedItems[currentLevel][index],
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black,
+                                      Icon(currentList[itemIndex]["icon"], size: 50, color: Colors.blue),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              currentList[itemIndex]["title"],
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            Text(
+                                              currentList[itemIndex]["price"],
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
+                            if (reorderedIndices[currentLevel] == itemIndex) // Show buttons only for the reordered item in the current list
+                              Positioned(
+                                top: -5,
+                                right: -2,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                                      onPressed: () {
+                                        _deleteItem(currentLevel, itemIndex);
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.close, color: Colors.grey, size: 20),
+                                      onPressed: () {
+                                        setState(() {
+                                          reorderedIndices[currentLevel] = null; // Hide buttons
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
                         ),
-                        if (deletingIndex == index)
-                          Positioned(
-                            top: -20,
-                            right: 0,
-                            child: Row(
-                              children: [
-                                FloatingActionButton(
-                                  mini: true,
-                                  backgroundColor: Colors.red,
-                                  onPressed: () => _deleteItem(index),
-                                  child: const Icon(Icons.delete, color: Colors.white),
-                                ),
-                                const SizedBox(width: 0),
-                                FloatingActionButton(
-                                  mini: true,
-                                  backgroundColor: Colors.grey,
-                                  onPressed: () {
-                                    setState(() {
-                                      deletingIndex = null;
-                                    });
-                                  },
-                                  child: const Icon(Icons.close, color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                      );
+                    }
+                  },
+                 ),
+               ),
             ),
           ),
         ],
