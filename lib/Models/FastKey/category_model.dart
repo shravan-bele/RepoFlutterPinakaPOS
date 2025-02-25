@@ -1,8 +1,8 @@
 // Using for Fast Key Screen Horizontal List Scroll
 class CategoryModel {
-  final String name;
-  final String itemCount;
-  final String imageAsset;
+  late String name; //Build #1.0.4
+  late String itemCount;
+  late String imageAsset;
 
   CategoryModel({
     required this.name,

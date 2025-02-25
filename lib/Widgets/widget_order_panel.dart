@@ -27,7 +27,6 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
     {"title": "#57751", "subtitle": "Tab 1"},
     {"title": "#57752", "subtitle": "Tab 2"}
   ];
-  final List<GlobalKey> _tabKeys = [];
 
   TabController? _tabController;
   final ScrollController _scrollController = ScrollController();
@@ -50,62 +49,37 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
 
   void addNewTab() {
     setState(() {
-      tabs.add({"id": UniqueKey().toString(), "title": "#${tabs.length + 57751}", "subtitle": "Tab ${tabs.length + 1}"});
+      tabs.add({"title": "#${tabs.length + 57751}", "subtitle": "Tab ${tabs.length + 1}"});
       _initializeTabController();
       _tabController!.index = tabs.length - 1;
     });
     _scrollToSelectedTab();
   }
 
+  void _scrollToSelectedTab() { //Build #1.0.4
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
   void removeTab(int index) {
     if (tabs.length > 1) {
-      int newIndex = _tabController!.index; // Store current index before removing
-
+      int newIndex = _tabController!.index;
       setState(() {
         tabs.removeAt(index);
         _initializeTabController();
-
-        // Adjust index to prevent out of range errors
         if (newIndex >= tabs.length) {
           newIndex = tabs.length - 1;
         }
-
         _tabController!.index = newIndex;
       });
     }
-  }
-
-  void _scrollToSelectedTab() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) { //Build #1.0.2 : updated thecode for auto scroll while re ordering the tabs
-        RenderBox? selectedTabBox = _tabKeys[_tabController!.index].currentContext?.findRenderObject() as RenderBox?;
-        RenderBox? listBox = _scrollController.position.context.storageContext.findRenderObject() as RenderBox?;
-
-        if (selectedTabBox != null && listBox != null) {
-          double selectedTabPosition = selectedTabBox.localToGlobal(Offset.zero, ancestor: listBox).dx;
-          double listViewWidth = listBox.size.width;
-          double tabWidth = selectedTabBox.size.width;
-
-          double scrollOffset = _scrollController.offset;
-
-          if (selectedTabPosition < 0) {
-            // Scroll left if tab is out of view on the left
-            _scrollController.animateTo(
-              scrollOffset + selectedTabPosition,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
-          } else if (selectedTabPosition + tabWidth > listViewWidth) {
-            // Scroll right if tab is out of view on the right
-            _scrollController.animateTo(
-              scrollOffset + (selectedTabPosition + tabWidth - listViewWidth),
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
-          }
-        }
-      }
-    });
   }
 
   @override
@@ -134,95 +108,51 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       controller: _scrollController,
-                      child: SizedBox(
-                        height: 68, // Fixed height for the tab bar
-                        child: ReorderableListView( //Build #1.0.2 : updated code for re ordering the tabs
-                          scrollDirection: Axis.horizontal,
-                          buildDefaultDragHandles: false,
-                          shrinkWrap: true,
-                          onReorder: (oldIndex, newIndex) {
-                            if (oldIndex < newIndex) newIndex -= 1;
-
-                            setState(() {
-                              final movedTab = tabs.removeAt(oldIndex);
-                              tabs.insert(newIndex, movedTab);
-
-                              if (_tabController!.index == oldIndex) {
-                                _tabController!.index = newIndex;
-                              } else if (_tabController!.index > oldIndex) {
-                                _tabController!.index -= 1;
-                              }
-                            });
-                          },
-                          proxyDecorator: (Widget child, int index, Animation<double> animation) {
-                            return Material(
-                              elevation: 0, // Remove shadow
-                              color: Colors.transparent, // Make background transparent
-                              child: child,
-                            );
-                          },
-                          children: List.generate(tabs.length, (index) {
-                            final bool isSelected = _tabController!.index == index;
-                            _tabKeys.add(GlobalKey());
-
-                            return Padding(
-                              key: _tabKeys[index],
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
-                              child: ReorderableDragStartListener(
-                                index: index,
-                                child: GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _tabController!.index = index;
-                                    });
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: isSelected ? Colors.white : Colors.grey.shade400,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Row(
+                      child: Row(
+                        children: List.generate(tabs.length, (index) { //Build #1.0.4 : removed re-order for tabs
+                          final bool isSelected = _tabController!.index == index;
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _tabController!.index = index;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? Colors.white : Colors.grey.shade400,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              tabs[index]["title"]!,
-                                              style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                                            ),
-                                            Text(
-                                              tabs[index]["subtitle"]!,
-                                              style: const TextStyle(color: Colors.black54, fontSize: 12),
-                                            ),
-                                          ],
+                                        Text(
+                                          tabs[index]["title"]!,
+                                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                                         ),
-                                        const SizedBox(width: 40),
-                                        if (tabs.length > 1)
-                                          GestureDetector(
-                                            onTap: () {
-                                              setState(() {
-                                                if (_tabController!.index == index) {
-                                                  if (index == tabs.length - 1) {
-                                                    _tabController!.index = index - 1;
-                                                  }
-                                                } else if (_tabController!.index > index) {
-                                                  _tabController!.index -= 1;
-                                                }
-                                                tabs.removeAt(index);
-                                              });
-                                            },
-                                            child: const Icon(Icons.close, size: 18, color: Colors.red),
-                                          ),
+                                        Text(
+                                          tabs[index]["subtitle"]!,
+                                          style: const TextStyle(color: Colors.black54, fontSize: 12),
+                                        ),
                                       ],
                                     ),
-                                  ),
+                                    const SizedBox(width: 40),
+                                    if (tabs.length > 1)
+                                      GestureDetector(
+                                        onTap: () => removeTab(index),
+                                        child: const Icon(Icons.close, size: 18, color: Colors.red),
+                                      ),
+                                  ],
                                 ),
                               ),
-                            );
-                          }),
-                        )
+                            ),
+                          );
+                        }),
                       ),
                     ),
                   ),
@@ -247,6 +177,9 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
   }
 // Current Order UI
   Widget buildCurrentOrder() {
+    if (kDebugMode) {
+      print("Building Current Order Widget");
+    } // Debug print
     return Column(
       children: [
         Container(
@@ -276,10 +209,28 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
           ),
         ),
         Expanded(
-          child: ListView.builder(
+          child: ReorderableListView.builder( //Build #1.0.4: re-order for list
+            onReorder: (oldIndex, newIndex) {
+              if (kDebugMode) {
+                print("Reordering item from $oldIndex to $newIndex");
+              } // Debug print
+              if (oldIndex < newIndex) newIndex -= 1;
+
+              setState(() {
+                final movedQuantity = widget.quantities.removeAt(oldIndex);
+                widget.quantities.insert(newIndex, movedQuantity);
+              });
+            },
             itemCount: widget.quantities.length,
+            proxyDecorator: (Widget child, int index, Animation<double> animation) {
+              return Material(
+                color: Colors.transparent, // Removes white background
+                child: child,
+              );
+            },
             itemBuilder: (context, index) {
               return ClipRRect(
+                key: ValueKey(index),
                 borderRadius: BorderRadius.circular(20),
                 child: SizedBox( // Ensuring Slidable matches the item height
                   height: 90, // Adjust to match your item height
@@ -292,6 +243,9 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                       children: [
                         CustomSlidableAction(
                           onPressed: (context) {
+                            if (kDebugMode) {
+                              print("Deleting item at index $index");
+                            } // Debug print
                             setState(() {
                               widget.quantities.removeAt(index);
                             });
@@ -310,6 +264,9 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                     ),
                     child: GestureDetector(
                       onTap: () {
+                        if (kDebugMode) {
+                          print("Item tapped: Bud Light Test");
+                        } // Debug print
                         showNumPadDialog(context, "Bud Light Test", (selectedQuantity) {
                           if (kDebugMode) {
                             print("Selected Quantity: $selectedQuantity");
@@ -330,44 +287,38 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                             )
                           ],
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                        child: Row(
                           children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: SvgPicture.asset(
+                                'assets/svg/password_placeholder.svg',
+                                height: 30,
+                                width: 30,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Bud Light Length was too long for test".length > 15
+                                        ? '${"Bud Light Length was too long for test".substring(0, 15)}...'
+                                        : "Bud Light",
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
+                                  const Text("6 * \$0.99", style: TextStyle(color: Colors.black54)),
+                                ],
+                              ),
+                            ),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: SvgPicture.asset(
-                                    'assets/svg/password_placeholder.svg',
-                                    height: 30,
-                                    width: 30,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        "Bud Light Length was too long for test".length > 15
-                                            ? '${"Bud Light Length was too long for test".substring(0, 15)}...'
-                                            : "Bud Light",
-                                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                      ),
-                                      const Text("6 * \$0.99", style: TextStyle(color: Colors.black54)),
-                                    ],
-                                  ),
-                                ),
-                                Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      "\$${(widget.quantities[index] * 0.99).toStringAsFixed(2)}",
-                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
+                                Text(
+                                  "\$${(widget.quantities[index] * 0.99).toStringAsFixed(2)}",
+                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                                 ),
                               ],
                             ),

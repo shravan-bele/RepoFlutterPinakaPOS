@@ -3,8 +3,8 @@ import 'package:intl/intl.dart';
 import '../../Widgets/widget_category_list.dart';
 import '../../Widgets/widget_nested_grid_layout.dart';
 import '../../Widgets/widget_order_panel.dart';
-import '../../Widgets/widget_sidebar.dart';
 import '../../Widgets/widget_topbar.dart';
+import '../../Widgets/widget_navigation_bar.dart' as custom_widgets;
 
 // Enum for sidebar position
 enum SidebarPosition { left, right, bottom }
@@ -56,7 +56,7 @@ class _FastKeyScreenState extends State<FastKeyScreen> {
               children: [
                 // Left Sidebar (Conditional)
                 if (sidebarPosition == SidebarPosition.left)
-                  LeftSidebar(
+                  custom_widgets.NavigationBar( //Build #1.0.4 : Updated class name LeftSidebar to NavigationBar
                     selectedSidebarIndex: _selectedSidebarIndex,
                     onSidebarItemSelected: (index) {
                       setState(() {
@@ -99,7 +99,7 @@ class _FastKeyScreenState extends State<FastKeyScreen> {
 
                 // Right Sidebar (Conditional)
                 if (sidebarPosition == SidebarPosition.right)
-                  LeftSidebar(
+                  custom_widgets.NavigationBar( //Build #1.0.4 : Updated class name LeftSidebar to NavigationBar
                     selectedSidebarIndex: _selectedSidebarIndex,
                     onSidebarItemSelected: (index) {
                       setState(() {
@@ -114,7 +114,7 @@ class _FastKeyScreenState extends State<FastKeyScreen> {
 
           // Bottom Sidebar (Conditional)
           if (sidebarPosition == SidebarPosition.bottom)
-            LeftSidebar(
+            custom_widgets.NavigationBar( //Build #1.0.4 : Updated class name LeftSidebar to NavigationBar
               selectedSidebarIndex: _selectedSidebarIndex,
               onSidebarItemSelected: (index) {
                 setState(() {
