@@ -38,50 +38,57 @@ class LeftSidebar extends StatelessWidget {
 
         Widget sidebarContent = Column(
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 10),
-                const Divider(color: Colors.black54),
-                SidebarButton(
-                  icon: Icons.flash_on,
-                  label: 'Fast Keys',
-                  isSelected: selectedSidebarIndex == 0,
-                  onTap: () => onSidebarItemSelected(0),
-                  isVertical: isVertical,
-                ),
-                SidebarButton(
-                  icon: Icons.category,
-                  label: 'Categories',
-                  isSelected: selectedSidebarIndex == 1,
-                  onTap: () => onSidebarItemSelected(1),
-                  isVertical: isVertical,
-                ),
-                SidebarButton(
-                  icon: Icons.add,
-                  label: 'Add',
-                  isSelected: selectedSidebarIndex == 2,
-                  onTap: () => onSidebarItemSelected(2),
-                  isVertical: isVertical,
-                ),
-                SidebarButton(
-                  icon: Icons.shopping_basket,
-                  label: 'Orders',
-                  isSelected: selectedSidebarIndex == 3,
-                  onTap: () => onSidebarItemSelected(3),
-                  isVertical: isVertical,
-                ),
-                SidebarButton(
-                  icon: Icons.apps,
-                  label: 'Apps',
-                  isSelected: selectedSidebarIndex == 4,
-                  onTap: () => onSidebarItemSelected(4),
-                  isVertical: isVertical,
-                ),
-              ],
-            ),
+            SingleChildScrollView(child:  Flexible(
+
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 10),
+                  const Divider(color: Colors.black54),
+                  SidebarButton(
+                    icon: Icons.flash_on,
+                    label: 'Fast Keys',
+                    isSelected: selectedSidebarIndex == 0,
+                    onTap: () => onSidebarItemSelected(0),
+                    isVertical: isVertical,
+                  ),
+                  SidebarButton(
+                    icon: Icons.category,
+                    label: 'Categories',
+                    isSelected: selectedSidebarIndex == 1,
+                    onTap: () => onSidebarItemSelected(1),
+                    isVertical: isVertical,
+                  ),
+                  SidebarButton(
+                    icon: Icons.add,
+                    label: 'Add',
+                    isSelected: selectedSidebarIndex == 2,
+                    onTap: () => onSidebarItemSelected(2),
+                    isVertical: isVertical,
+                  ),
+                  SidebarButton(
+                    icon: Icons.shopping_basket,
+                    label: 'Orders',
+                    isSelected: selectedSidebarIndex == 3,
+                    onTap: () => onSidebarItemSelected(3),
+                    isVertical: isVertical,
+                  ),
+                  // SidebarButton(
+                  //   icon: Icons.apps,
+                  //   label: 'Apps',
+                  //   isSelected: selectedSidebarIndex == 4,
+                  //   onTap: () => onSidebarItemSelected(4),
+                  //   isVertical: isVertical,
+                  // ),
+                ],
+              ),
+            ),),
+
             const Spacer(), // Keeps items aligned
-            Column(
+            Container(
+              height: 200,
+              // margin: EdgeInsets.only(bottom: 5),
+              child: Column(
               children: [
                 const Divider(color: Colors.black54),
                 SidebarButton(
@@ -100,13 +107,15 @@ class LeftSidebar extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
               ],
-            ),
+            ),),
+
           ],
         );
 
-        return isSmallScreen
-            ? SingleChildScrollView(child: sidebarContent)
-            : sidebarContent;
+        return sidebarContent;
+        // return isSmallScreen
+        //     ? Expanded(child: SingleChildScrollView(child: sidebarContent) ,)
+        //     : sidebarContent;
       },
     );
   }
