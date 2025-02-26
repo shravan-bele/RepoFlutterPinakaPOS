@@ -22,7 +22,7 @@ class _FastKeyScreenState extends State<FastKeyScreen> {
   final List<String> items = List.generate(18, (index) => 'Bud Light');
   int _selectedSidebarIndex = 0; //Build #1.0.2 : By default fast key should be selected after login
   DateTime now = DateTime.now();
-  List<int> quantities = [1, 1, 1, 1, 1];
+  List<int> quantities = [1, 1, 1, 1];
   SidebarPosition sidebarPosition = SidebarPosition.left; // Default to bottom sidebar
   OrderPanelPosition orderPanelPosition = OrderPanelPosition.right; // Default to right
 
@@ -49,7 +49,11 @@ class _FastKeyScreenState extends State<FastKeyScreen> {
               });
             },
           ),
-
+          Divider( // Build #1.0.6
+            color: Colors.grey,
+            thickness: 0.4,
+            height: 1,
+          ),
           // Main Content
           Expanded(
             child: Row(
@@ -80,10 +84,10 @@ class _FastKeyScreenState extends State<FastKeyScreen> {
                   child: Column(
                     children: [
                       // Add the CategoryScroll widget here
-                      CategoryList(),
+                      CategoryList(isHorizontal: true), // Build #1.0.6 - Added Category list horizontal/ vertical based on bool
 
                       // Grid Layout
-                      NestedGridWidget()
+                      NestedGridWidget(isHorizontal: true), // Build #1.0.6
                     ],
                   ),
                 ),

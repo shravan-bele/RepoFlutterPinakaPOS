@@ -90,6 +90,7 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       width: MediaQuery.of(context).size.width * 0.32,
       padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
@@ -177,6 +178,7 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
   }
 // Current Order UI
   Widget buildCurrentOrder() {
+    final theme = Theme.of(context); // Build #1.0.6 - added theme for order panel
     if (kDebugMode) {
       print("Building Current Order Widget");
     } // Debug print
@@ -191,21 +193,21 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(widget.formattedDate,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black54)),
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: theme.secondaryHeaderColor)),
                   const SizedBox(width: 8),
-                  Text(widget.formattedTime, style: const TextStyle(fontSize: 14, color: Colors.black38)),
+                  Text(widget.formattedTime, style: TextStyle(fontSize: 14, color: theme.secondaryHeaderColor)),
                 ],
               ),
             ],
           ),
         ),
-        const Padding(
+         Padding(
           padding: EdgeInsets.symmetric(horizontal: 10),
           child: DottedLine(
             dashLength: 4,
             dashGapLength: 4,
             lineThickness: 1,
-            dashColor: Colors.black,
+            dashColor: theme.secondaryHeaderColor,
           ),
         ),
         Expanded(
@@ -307,7 +309,7 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                                     "Bud Light Length was too long for test".length > 15
                                         ? '${"Bud Light Length was too long for test".substring(0, 15)}...'
                                         : "Bud Light",
-                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
                                   ),
                                   const Text("6 * \$0.99", style: TextStyle(color: Colors.black54)),
                                 ],

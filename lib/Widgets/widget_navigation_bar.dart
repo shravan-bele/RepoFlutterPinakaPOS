@@ -1,5 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:pinaka_pos/Screens/Home/categories_screen.dart';
+import 'package:pinaka_pos/Screens/Home/fast_key_screen.dart';
+
+import '../Screens/Home/settings_screen.dart';
 
 class NavigationBar extends StatelessWidget {
   final int selectedSidebarIndex;
@@ -15,15 +19,16 @@ class NavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context); // Build #1.0.6 - Added theme for navigation bar
     return Container(
       width: isVertical ? MediaQuery.of(context).size.width * 0.12 : null,
       height: isVertical ? null : 100,
-      color: Colors.grey.shade100,
+      color: theme.scaffoldBackgroundColor,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
         child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.black87,
+          decoration: BoxDecoration(
+            color: theme.primaryColor,
             borderRadius: BorderRadius.all(Radius.circular(20)),
           ),
           child: isVertical ? _buildVerticalLayout() : _buildHorizontalLayout(),
@@ -44,14 +49,36 @@ class NavigationBar extends StatelessWidget {
             icon: Icons.flash_on,
             label: 'Fast Keys',
             isSelected: selectedSidebarIndex == 0,
-            onTap: () => onSidebarItemSelected(0),
+            onTap: () { // Build #1.0.6
+              if (kDebugMode) {
+                print("##### Fast Keys button tapped");
+              }
+              onSidebarItemSelected(0);
+
+              /// CategoriesScreen
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const FastKeyScreen()),
+              );
+            },
             isVertical: isVertical,
           ),
           SidebarButton(
             icon: Icons.category,
             label: 'Categories',
             isSelected: selectedSidebarIndex == 1,
-            onTap: () => onSidebarItemSelected(1),
+            onTap: () { // Build #1.0.6
+              if (kDebugMode) {
+                print("##### Categories button tapped");
+              }
+              onSidebarItemSelected(1);
+
+              /// CategoriesScreen
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CategoriesScreen()),
+              );
+            },
             isVertical: isVertical,
           ),
           SidebarButton(
@@ -86,7 +113,18 @@ class NavigationBar extends StatelessWidget {
               icon: Icons.settings,
               label: 'Settings',
               isSelected: selectedSidebarIndex == 5,
-              onTap: () => onSidebarItemSelected(5),
+              onTap: () { // Build #1.0.6
+                if (kDebugMode) {
+                  print("Settings button tapped");
+                }
+                onSidebarItemSelected(5);
+
+                /// SettingsScreen
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                );
+              },
               isVertical: isVertical,
             ),
             SidebarButton(
@@ -134,14 +172,36 @@ class NavigationBar extends StatelessWidget {
             icon: Icons.flash_on,
             label: 'Fast Keys',
             isSelected: selectedSidebarIndex == 0,
-            onTap: () => onSidebarItemSelected(0),
+            onTap: () { // Build #1.0.6
+              if (kDebugMode) {
+                print("##### Fast Keys button tapped");
+              }
+              onSidebarItemSelected(0);
+
+              /// CategoriesScreen
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const FastKeyScreen()),
+              );
+            },
             isVertical: isVertical,
           ),
           SidebarButton(
             icon: Icons.category,
             label: 'Categories',
             isSelected: selectedSidebarIndex == 1,
-            onTap: () => onSidebarItemSelected(1),
+            onTap: () { // Build #1.0.6
+              if (kDebugMode) {
+                print("##### Categories button tapped");
+              }
+              onSidebarItemSelected(1);
+
+              /// CategoriesScreen
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CategoriesScreen()),
+              );
+            },
             isVertical: isVertical,
           ),
           SidebarButton(
@@ -175,7 +235,18 @@ class NavigationBar extends StatelessWidget {
             icon: Icons.settings,
             label: 'Settings',
             isSelected: selectedSidebarIndex == 5,
-            onTap: () => onSidebarItemSelected(5),
+            onTap: () { // Build #1.0.6
+              if (kDebugMode) {
+                print("Settings button tapped");
+              }
+              onSidebarItemSelected(5);
+
+              /// SettingsScreen
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
             isVertical: isVertical,
           ),
           SidebarButton(

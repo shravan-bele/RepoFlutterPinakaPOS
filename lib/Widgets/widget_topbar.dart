@@ -9,10 +9,11 @@ class TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context); // Build #1.0.6 - Added theme for top bar
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      color: Colors.grey.shade100,
+     // color: theme.appBarTheme.backgroundColor,
       child: Row(
         children: [
           SvgPicture.asset(
@@ -22,16 +23,19 @@ class TopBar extends StatelessWidget {
           ),
           const SizedBox(width: 140),
            Expanded(
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: AppConstants.searchHint,
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                  borderSide: BorderSide.none,
+            child: Container( // Build #1.0.6
+              height: 50,
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: AppConstants.searchHint,
+                  prefixIcon: Icon(Icons.search, color: theme.iconTheme.color),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                 // fillColor: theme.dividerColor,
                 ),
-                filled: true,
-                fillColor: Colors.white,
               ),
             ),
           ),

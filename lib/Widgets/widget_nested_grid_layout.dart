@@ -6,7 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 
 class NestedGridWidget extends StatefulWidget {
-  const NestedGridWidget({super.key});
+  final bool isHorizontal;
+  const NestedGridWidget({super.key, required this.isHorizontal});
 
   @override
   _NestedGridWidgetState createState() => _NestedGridWidgetState();
@@ -31,6 +32,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
   List<String> navigationPath = ["Home"];
   bool isLoading = false;
   List<int?> reorderedIndices = []; // Track reordered indices for each nested list
+  int? selectedItemIndex;
 
   File? _pickedImage;
   final ImagePicker _picker = ImagePicker();
@@ -222,6 +224,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
   Widget build(BuildContext context) {
     final currentList = nestedItems[currentLevel];
     final totalCount = currentList.length + 1;
+    final theme = Theme.of(context); // Build #1.0.6 - Added theme for grid
 
     return Expanded(
       child: Column(
@@ -234,9 +237,9 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                   ElevatedButton(
                     onPressed: _onBackPressed,
                     style: ElevatedButton.styleFrom(
-                      side: const BorderSide(color: Colors.black),
+                      side: BorderSide(color: theme.secondaryHeaderColor,),
                     ),
-                    child: const Text("Back", style: TextStyle(color: Colors.black)),
+                    child: Text("Back", style: TextStyle(color: theme.secondaryHeaderColor)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -258,9 +261,9 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                                   ),
                                 ),
                                 if (index < navigationPath.length - 1)
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 8.0),
-                                    child: Icon(Icons.arrow_forward, size: 16, color: Colors.grey),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                    child: Icon(Icons.arrow_forward, size: 16, color: theme.secondaryHeaderColor),
                                   ),
                               ],
                             ),
@@ -278,33 +281,35 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : Material(
-                    color: Colors.transparent, // Prevents transparency issues
-                    child: ReorderableGridView.builder(
-                       padding: const EdgeInsets.all(16),
-                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                       crossAxisCount: 3,
-                       mainAxisSpacing: 20,
-                       crossAxisSpacing: 10,
-                       childAspectRatio: 2.2,
-                      ),
-                       itemCount: totalCount,
-                       onReorder: (oldIndex, newIndex) {
-                       if (oldIndex == 0 || newIndex == 0) return;
-                       final adjustedOldIndex = oldIndex - 1;
-                       final adjustedNewIndex = newIndex - 1;
-                       setState(() {
-                       final item = currentList.removeAt(adjustedOldIndex);
-                       currentList.insert(adjustedNewIndex, item);
-                       reorderedIndices[currentLevel] = adjustedNewIndex; // Set reordered index for current list
-                      });
-                     },
-                    itemBuilder: (context, index) {
+                color: Colors.transparent,
+                child: ReorderableGridView.builder( // Build #1.0.6 - Added Re order for grid
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 20,
+                    crossAxisSpacing: 10,
+                    childAspectRatio: widget.isHorizontal ? 2.2 : 1.8,
+                  ),
+                  itemCount: totalCount,
+                  onReorder: (oldIndex, newIndex) {
+                    if (oldIndex == 0 || newIndex == 0) return;
+                    final adjustedOldIndex = oldIndex - 1;
+                    final adjustedNewIndex = newIndex - 1;
+                    setState(() {
+                      final item = currentList.removeAt(adjustedOldIndex);
+                      currentList.insert(adjustedNewIndex, item);
+                      reorderedIndices[currentLevel] = adjustedNewIndex;
+                      selectedItemIndex = adjustedNewIndex; // Set selected item after reorder
+                    });
+                  },
+                  itemBuilder: (context, index) {
                     if (index == 0) {
                       return Container(
                         key: const ValueKey('add_button'),
                         child: GestureDetector(
                           onTap: () => _showAddItemDialog(currentLevel),
                           child: Card(
+                            color: Colors.white,
                             elevation: 4,
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -319,14 +324,31 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                       );
                     } else {
                       final itemIndex = index - 1;
-                      return Container(
+                      final isReordered = reorderedIndices[currentLevel] == itemIndex;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        decoration: BoxDecoration(
+                          border: isReordered ? Border.all(color: Colors.blue, width: 3) : null,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         key: ValueKey('grid_item_${currentLevel}_${itemIndex}_${currentList[itemIndex]["title"]}'),
                         child: Stack(
                           clipBehavior: Clip.none,
                           children: [
                             GestureDetector(
-                              onTap: () => _onItemSelected(itemIndex),
+                              onTap: () {
+                                setState(() {
+                                  if (selectedItemIndex == itemIndex) {
+                                    selectedItemIndex = null; // Deselect if tapping the same item
+                                  } else {
+                                    selectedItemIndex = itemIndex;
+                                    reorderedIndices[currentLevel] = null; // Hide delete/cancel on selection change
+                                  }
+                                  _onItemSelected(itemIndex);
+                                });
+                              },
                               child: Card(
+                                color: Colors.white,
                                 elevation: 4,
                                 child: Padding(
                                   padding: const EdgeInsets.all(8.0),
@@ -341,7 +363,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                                           children: [
                                             Text(
                                               currentList[itemIndex]["title"],
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.bold,
                                                 color: Colors.black,
@@ -350,9 +372,9 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                                             ),
                                             Text(
                                               currentList[itemIndex]["price"],
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 12,
-                                                color: Colors.grey,
+                                                color: Colors.black,
                                               ),
                                             ),
                                           ],
@@ -363,10 +385,10 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                                 ),
                               ),
                             ),
-                            if (reorderedIndices[currentLevel] == itemIndex) // Show buttons only for the reordered item in the current list
+                            if (isReordered)
                               Positioned(
-                                top: -5,
-                                right: -2,
+                                top: widget.isHorizontal ? -5 : -9,
+                                right: widget.isHorizontal ? -2 : -4,
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -376,11 +398,12 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                                         _deleteItem(currentLevel, itemIndex);
                                       },
                                     ),
+                                    const SizedBox(width: 0),
                                     IconButton(
                                       icon: const Icon(Icons.close, color: Colors.grey, size: 20),
                                       onPressed: () {
                                         setState(() {
-                                          reorderedIndices[currentLevel] = null; // Hide buttons
+                                          reorderedIndices[currentLevel] = null;
                                         });
                                       },
                                     ),
@@ -392,8 +415,8 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                       );
                     }
                   },
-                 ),
-               ),
+                ),
+              ),
             ),
           ),
         ],

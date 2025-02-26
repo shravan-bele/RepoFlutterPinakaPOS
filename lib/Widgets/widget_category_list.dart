@@ -178,7 +178,8 @@ import 'dart:io';
 import '../Models/FastKey/category_model.dart';
 
 class CategoryList extends StatefulWidget {
-  const CategoryList({super.key});
+  final bool isHorizontal; // Build #1.0.6
+  const CategoryList({super.key, required this.isHorizontal});
 
   @override
   _CategoryListState createState() => _CategoryListState();
@@ -241,156 +242,361 @@ class _CategoryListState extends State<CategoryList> {
 
   @override
   Widget build(BuildContext context) {
-    var size = MediaQuery.of(context).size; // Get screen size
     return Padding(
       padding: const EdgeInsets.all(8.0),
-      child: Row(
-        children: [
-          // Show left scroll button if needed
-          if (_showLeftArrow)
-            _buildScrollButton(Icons.arrow_back_ios, () {
-              // Scroll left
-              _scrollController.animateTo(
-                _scrollController.offset - size.width,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            }),
-          Expanded(
-            child: SizedBox(
-              height: 110,
-              child: ReorderableListView( //Build #1.0.4
-                scrollController: _scrollController,
-                scrollDirection: Axis.horizontal,
-                onReorderStart: (index) {
-                  setState(() {
-                    _editingIndex = index; // Keep track of the item being reordered
-                  });
-                },
-                onReorder: (oldIndex, newIndex) {
-                  if (newIndex > oldIndex) newIndex--;
+      child: widget.isHorizontal // Build #1.0.6
+          ? _buildHorizontalList()
+          : _buildVerticalList(),
+    );
+  }
 
-                  setState(() {
-                    final item = categories.removeAt(oldIndex);
-                    categories.insert(newIndex, item);
 
-                    // Adjust _editingIndex if the item was moved
-                    if (_editingIndex == oldIndex) {
-                      _editingIndex = newIndex;
+  Widget _buildHorizontalList() {
+    var size = MediaQuery.of(context).size; // Get screen size
+    return Row(
+      children: [
+        // Show left scroll button if needed
+        if (_showLeftArrow)
+          _buildScrollButton(Icons.arrow_back_ios, () {
+            // Scroll left
+            _scrollController.animateTo(
+              _scrollController.offset - size.width,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          }),
+        Expanded(
+          child: SizedBox(
+            height: 110,
+            child: ReorderableListView( //Build #1.0.4
+              scrollController: _scrollController,
+              scrollDirection: Axis.horizontal,
+              onReorderStart: (index) {
+                if (kDebugMode) {
+                  print("##### onReorderStart 123");
+                }
+                setState(() {
+                  _editingIndex =
+                      index; // Keep track of the item being reordered
+                });
+              },
+              onReorder: (oldIndex, newIndex) {
+                if (newIndex > oldIndex) newIndex--;
+
+                setState(() {
+                  final item = categories.removeAt(oldIndex);
+                  categories.insert(newIndex, item);
+
+                  // Adjust _editingIndex if the item was moved
+                  if (_editingIndex == oldIndex) {
+                    _editingIndex = newIndex;
+                  }
+
+                  // Only update _selectedIndex if it's not null.
+                  if (_selectedIndex != null) {
+                    if (_selectedIndex == oldIndex) {
+                      _selectedIndex = newIndex;
+                    } else if (oldIndex < _selectedIndex! &&
+                        newIndex >= _selectedIndex!) {
+                      _selectedIndex = _selectedIndex! - 1;
+                    } else if (oldIndex > _selectedIndex! &&
+                        newIndex <= _selectedIndex!) {
+                      _selectedIndex = _selectedIndex! + 1;
                     }
+                  }
+                });
+              },
+              proxyDecorator: (Widget child, int index,
+                  Animation<double> animation) {
+                return Material(
+                  elevation: 0, // Remove shadow
+                  color: Colors.transparent, // Make background transparent
+                  child: child,
+                );
+              },
+              children: List.generate(categories.length, (index) {
+                final category = categories[index];
+                bool isSelected = _selectedIndex ==
+                    index; // Check if item is selected
+                bool showEditButton = _editingIndex == index;
 
-                    // Only update _selectedIndex if it's not null.
-                    if (_selectedIndex != null) {
-                      if (_selectedIndex == oldIndex) {
-                        _selectedIndex = newIndex;
-                      } else if (oldIndex < _selectedIndex! && newIndex >= _selectedIndex!) {
-                        _selectedIndex = _selectedIndex! - 1;
-                      } else if (oldIndex > _selectedIndex! && newIndex <= _selectedIndex!) {
-                        _selectedIndex = _selectedIndex! + 1;
+                return GestureDetector(
+                  key: ValueKey(category.name),
+                  // onLongPressStart: (details) {
+                  //   if (kDebugMode) {
+                  //     print("##### onLongPressStart 123");
+                  //   }
+                  //   setState(() {
+                  //     _editingIndex = index; // Show edit button
+                  //   });
+                  // },
+                  onTap: () {
+                    setState(() {
+                      if (_selectedIndex == index) {
+                        _selectedIndex = null;
+                      } else {
+                        _selectedIndex = index;
+                        _editingIndex =
+                        null; // Hide edit button when selecting a different item
                       }
-                    }
-                  });
-                },
-                proxyDecorator: (Widget child, int index, Animation<double> animation) {
-                  return Material(
-                    elevation: 0, // Remove shadow
-                    color: Colors.transparent, // Make background transparent
-                    child: child,
-                  );
-                },
-                children: List.generate(categories.length, (index) {
-                  final category = categories[index];
-                  bool isSelected = _selectedIndex == index; // Check if item is selected
-                  bool showEditButton = _editingIndex == index;
-
-                  return GestureDetector(
-                    key: ValueKey(category.name),
-                    onTap: () {
-                      setState(() {
-                        _selectedIndex = isSelected ? null : index;
-                      });
-                      // Print selected category for debugging
-                      if (kDebugMode) {
-                        print('Selected Category: ${category.name}');
-                      }
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 5.0),
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
-                        decoration: BoxDecoration(
-                          color: isSelected ? Colors.red : Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.black12),
+                    });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 5.0),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
+                      decoration: BoxDecoration(
+                        color: isSelected ? Colors.red : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _editingIndex == index
+                              ? Colors.blueAccent
+                              : Colors.black12,
+                          width: _editingIndex == index
+                              ? 2
+                              : 1, // Slight border change on long press
                         ),
-                        child: Stack(
-                          children: [
-                            // Edit Button at Top Right Corner
-                            Positioned(
-                              top: 0,
-                              right: -6,
-                              child: showEditButton
-                                  ? GestureDetector(
-                                onTap: () => _showCategoryDialog(index: index),
+                      ),
+                      child: Stack(
+                        children: [
+                          // Edit Button with Animation
+                          Positioned(
+                            top: 0,
+                            right: -6,
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 300),
+                              opacity: showEditButton ? 1.0 : 0.0,
+                              child: GestureDetector(
+                                onTap: () =>
+                                    _showCategoryDialog(index: index),
                                 child: Container(
                                   padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(
+                                  decoration: BoxDecoration(
                                     color: Colors.transparent,
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.edit,
-                                      size: 14, color: Colors.blueAccent),
+                                  child: const Icon(Icons.edit, size: 14,
+                                      color: Colors.blueAccent),
                                 ),
-                              )
-                                  : const SizedBox(),
+                              ),
                             ),
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SvgPicture.asset(category.imageAsset,
-                                    height: 40, width: 40),
-                                const SizedBox(height: 8),
-                                Text(
-                                  category.name,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: isSelected ? Colors.white : Colors.black,
-                                  ),
+                          ),
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SvgPicture.asset(
+                                  category.imageAsset, height: 40,
+                                  width: 40),
+                              const SizedBox(height: 8),
+                              Text(
+                                category.name,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: isSelected ? Colors.white : Colors
+                                      .black,
                                 ),
-                                Text(
-                                  category.itemCount,
-                                  style: TextStyle(
-                                    color: isSelected ? Colors.white : Colors.grey,
-                                  ),
+                              ),
+                              Text(
+                                category.itemCount,
+                                style: TextStyle(
+                                  color: isSelected ? Colors.white : Colors
+                                      .grey,
                                 ),
-                              ],
-                            ),
-                          ],
-                        ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                  );
-                }),
-              ),
+                  ),
+                );
+              }),
             ),
           ),
-          // Show right scroll button if needed
-          if (_showRightArrow)
-            _buildScrollButton(Icons.arrow_forward_ios, () {
-              // Scroll right
-              _scrollController.animateTo(
-                _scrollController.offset + size.width,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            }),
-          const SizedBox(width: 8),
-          _buildScrollButton(Icons.add, () {
-            _showCategoryDialog();
+        ),
+        // Show right scroll button if needed
+        if (_showRightArrow)
+          _buildScrollButton(Icons.arrow_forward_ios, () {
+            // Scroll right
+            _scrollController.animateTo(
+              _scrollController.offset + size.width,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
           }),
-        ],
-      ),
+        const SizedBox(width: 8),
+        _buildScrollButton(Icons.add, () {
+          _showCategoryDialog();
+        }),
+      ],
     );
+  }
+
+  Widget _buildVerticalList() {
+    return Column(
+      children: [
+        SizedBox(
+          height: MediaQuery.of(context).size.height * 0.7,
+          width: MediaQuery.of(context).size.width * 0.35,
+          child: ReorderableListView(
+              scrollDirection: Axis.vertical,
+              onReorderStart: (index) {
+                if (kDebugMode) {
+                  print("##### onReorderStart 123");
+                }
+                setState(() {
+                  _editingIndex =
+                      index; // Keep track of the item being reordered
+                });
+              },
+              onReorder: (oldIndex, newIndex) {
+                if (newIndex > oldIndex) newIndex--;
+
+                setState(() {
+                  final item = categories.removeAt(oldIndex);
+                  categories.insert(newIndex, item);
+
+                  // Adjust _editingIndex if the item was moved
+                  if (_editingIndex == oldIndex) {
+                    _editingIndex = newIndex;
+                  }
+
+                  // Only update _selectedIndex if it's not null.
+                  if (_selectedIndex != null) {
+                    if (_selectedIndex == oldIndex) {
+                      _selectedIndex = newIndex;
+                    } else if (oldIndex < _selectedIndex! &&
+                        newIndex >= _selectedIndex!) {
+                      _selectedIndex = _selectedIndex! - 1;
+                    } else if (oldIndex > _selectedIndex! &&
+                        newIndex <= _selectedIndex!) {
+                      _selectedIndex = _selectedIndex! + 1;
+                    }
+                  }
+                });
+              },
+              proxyDecorator: (Widget child, int index,
+                  Animation<double> animation) {
+                return Material(
+                  elevation: 0, // Remove shadow
+                  color: Colors.transparent, // Make background transparent
+                  child: child,
+                );
+              },
+              children: List.generate(categories.length, (index){
+                final category = categories[index];
+                bool isSelected = _selectedIndex ==
+                    index; // Check if item is selected
+                bool showEditButton = _editingIndex == index;
+                return GestureDetector(
+                  key: ValueKey(category.name),
+                  onTap: () {
+                    setState(() {
+                      if (_selectedIndex == index) {
+                        _selectedIndex = null;
+                      } else {
+                        _selectedIndex = index;
+                        _editingIndex =
+                        null; // Hide edit button when selecting a different item
+                      }
+                    });
+                  },
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 5.0),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      padding: const EdgeInsets.fromLTRB(0, 8, 0, 8),
+                      decoration: BoxDecoration(
+                        color: isSelected ? Colors.red : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _editingIndex == index
+                              ? Colors.blueAccent
+                              : Colors.black12,
+                          width: _editingIndex == index
+                              ? 2
+                              : 1, // Slight border change on long press
+                        ),
+                      ),
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            top: widget.isHorizontal ? 0 : 0,
+                            right: widget.isHorizontal ? -6 : 0,
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 300),
+                              opacity: showEditButton ? 1.0 : 0.0,
+                              child: GestureDetector(
+                                onTap: () =>
+                                    _showCategoryDialog(index: index),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.transparent,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.edit, size: 14,
+                                      color: Colors.blueAccent),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              SvgPicture.asset(
+                                category.imageAsset,
+                                height: 30,
+                                width: 30,
+                              ),
+                              const SizedBox(width: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    category.name,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: isSelected ? Colors.white : Colors.black,
+                                    ),
+                                  ),
+                                  Text(
+                                    category.itemCount,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          )
+                        ],
+                      ) ,
+                    ),
+                  ),
+                );
+              })
+          ),
+        ),
+        SizedBox(height: 8,),
+        Container(
+          width: MediaQuery.of(context).size.width * 0.35,
+          padding: const EdgeInsets.all(1),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.black12),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: IconButton(
+            icon: Icon(Icons.add, color: Colors.redAccent),
+            onPressed: (){
+              _showCategoryDialog();
+            },
+          ),
+        )
+      ],
+    );
+
   }
 
   // Helper method to build scroll buttons (left and right)
