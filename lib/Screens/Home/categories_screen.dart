@@ -12,7 +12,10 @@ enum SidebarPosition { left, right, bottom }
 enum OrderPanelPosition { left, right }
 
 class CategoriesScreen extends StatefulWidget { // Build #1.0.6 - Updated Horizontal & Vertical Scrolling
-  const CategoriesScreen({super.key});
+  final int? lastSelectedIndex; // Make it nullable
+
+  const CategoriesScreen({super.key, this.lastSelectedIndex}); // Optional, no default value
+
 
   @override
   State<CategoriesScreen> createState() => _CategoriesScreenState();
@@ -25,6 +28,20 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   List<int> quantities = [1, 1, 1, 1];
   SidebarPosition sidebarPosition = SidebarPosition.left; // Default to bottom sidebar
   OrderPanelPosition orderPanelPosition = OrderPanelPosition.right; // Default to right
+  bool isLoading = true; // Add a loading state
+
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedSidebarIndex = widget.lastSelectedIndex ?? 1; // Build #1.0.7: Restore previous selection
+    // Simulate a loading delay
+    Future.delayed(const Duration(seconds: 3), () {
+      setState(() {
+        isLoading = false; // Set loading to false after 3 seconds
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,10 +102,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     children: [
                       SizedBox(
                         width: 200,
-                          child: CategoryList(isHorizontal: false)
+                          child: CategoryList(isHorizontal: false, isLoading: isLoading) // Build #1.0.7
                       ),
                       // Grid Layout
-                      const NestedGridWidget(isHorizontal: false),
+                       NestedGridWidget(isHorizontal: false, isLoading: isLoading), // Build #1.0.7
                     ],
                   ),
                 ),

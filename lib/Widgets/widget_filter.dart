@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../Constants/text.dart';
+
 class FilterDropdown extends StatefulWidget {
   final List<String> items;
   final String selectedValue;
@@ -38,7 +40,7 @@ class _FilterDropdownState extends State<FilterDropdown> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            "Filters",
+            TextConstants.filtersText,
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.normal, color: Colors.grey[800]),
           ),
           // Filter Icon Button

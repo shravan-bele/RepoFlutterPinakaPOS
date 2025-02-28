@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
+import '../../Constants/text.dart';
 import '../../Helper/Extentions/theme_notifier.dart';
+import '../../Preferences/pinaka_preferences.dart';
 
 class SettingsScreen extends StatefulWidget { // Build #1.0.6 - Added Settings Screen
   const SettingsScreen({super.key});
@@ -17,7 +19,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool quickProductAdd = false;
   bool outOfStockManage = true;
   String cacheDuration = "Never";
-  String appearance = "Light";
+  String? appearance;
   bool enableGST = false;
   String selectedLanguage = "English";
   bool isRetailer = true;
@@ -31,6 +33,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   TextEditingController footerController = TextEditingController();
   TextEditingController deviceIdController = TextEditingController();
   TextEditingController posNoController = TextEditingController();
+  final PinakaPreferences _preferences = PinakaPreferences(); // Create an instance
 
   @override
   void initState() {
@@ -39,8 +42,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     contactNoController.text = "+9101234567891";
     emailController.text = "test@pinaka.com";
     deviceIdController.text = "4C4C4544-005A-3310-8043-B3C04F334733";
+
+    _loadAppThemeMode(); // Appearance light/dark/system
   }
 
+  Future<void> _loadAppThemeMode() async { // Build #1.0.7: get theme from preference value
+    appearance = await _preferences.getSavedAppThemeMode();
+    setState(() {}); // Update UI
+    if (kDebugMode) {
+      print("#### _loadAppThemeMode : $appearance");
+    }
+  }
   @override
   void dispose() {
     nameController.dispose();
@@ -76,7 +88,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       SizedBox(width: 8), // Add spacing between arrow and text
                       Text(
-                        "Settings",
+                        TextConstants.settingsHeaderText,
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -91,7 +103,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     ),
                     onPressed: () {},
-                    child: Text("Save Changes", style: TextStyle(color: Colors.black)),
+                    child: Text(TextConstants.saveChangesBtnText, style: TextStyle(color: Colors.black)),
                   ),
                 ],
               ),
@@ -158,10 +170,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Personal Information",
+        Text(TextConstants.personalInfoText,
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
         SizedBox(height: 8),
-        Text("Change your personal information",
+        Text(TextConstants.personalInfoSubText,
             style: TextStyle(fontSize: 14, color: Colors.grey)),
         SizedBox(height: 16),
         Row(
@@ -179,8 +191,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("user", style: TextStyle(fontSize: 16, color: Colors.white)),
-                Text("ADMINISTRATOR",
+                Text(TextConstants.userText, style: TextStyle(fontSize: 16, color: Colors.white)),
+                Text(TextConstants.administratorText,
                     style: TextStyle(fontSize: 12, color: Colors.tealAccent)),
               ],
             ),
@@ -191,14 +203,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Expanded(
                 child: _buildTextField(
-                    label: "Full Name", controller: nameController)),
+                    label: TextConstants.fullNameText, controller: nameController)),
             SizedBox(width: 10),
             Expanded(
                 child: _buildTextField(
-                    label: "Contact No", controller: contactNoController)),
+                    label: TextConstants.contactNoText, controller: contactNoController)),
           ],
         ),
-        _buildTextField(label: "Email Address", controller: emailController),
+        _buildTextField(label: TextConstants.emailText, controller: emailController),
       ],
     );
   }
@@ -207,10 +219,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Receipt Setting",
+        Text(TextConstants.receiptText,
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
         SizedBox(height: 8),
-        Text("Customize your own receipt",
+        Text(TextConstants.ownReceiptText,
             style: TextStyle(fontSize: 14, color: Colors.grey)),
         SizedBox(height: 16),
         Row(
@@ -219,12 +231,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             SizedBox(width: 10),
             Expanded(
                 child: _buildTextField(
-                    label: "Company Name", hintText: "Company Name")),
+                    label: TextConstants.companyNameText, hintText: TextConstants.companyNameHintText)),
           ],
         ),
-        _buildTextField(label: "GSTIN", hintText: "GSTIN"),
-        _buildTextField(label: "Header", hintText: "Header"),
-        _buildTextField(label: "Footer", hintText: "Footer"),
+        _buildTextField(label: TextConstants.gstinText, hintText: TextConstants.gstinHintText),
+        _buildTextField(label: TextConstants.headerText, hintText: TextConstants.headerHintText),
+        _buildTextField(label: TextConstants.footerText, hintText: TextConstants.footerHintText),
       ],
     );
   }
@@ -239,11 +251,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Device Details",
+                Text(TextConstants.deviceDetailsText,
                     style:
                     TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                 SizedBox(height: 4),
-                Text("You can give id to this POS.",
+                Text(TextConstants.idPOSText,
                     style: TextStyle(fontSize: 14, color: Colors.grey)),
               ],
             ),
@@ -252,7 +264,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 // Handle Copy Token action
               },
               icon: Icon(Icons.copy, color: Colors.white),
-              label: Text("Copy Token", style: TextStyle(color: Colors.white)),
+              label: Text(TextConstants.copyTokenBtnText, style: TextStyle(color: Colors.white)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.teal,
               ),
@@ -261,13 +273,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         SizedBox(height: 16),
         _buildTextField(
-            label: "Device Id",
+            label: TextConstants.deviceIdText,
             controller: deviceIdController,
             isReadOnly: true),
         SizedBox(height: 16),
-        _buildTextField(label: "POS Number", hintText: "POS Number"),
+        _buildTextField(label: TextConstants.posNumberText, hintText: TextConstants.posNumberHintText),
         SizedBox(height: 16),
-        Text("POS For", style: TextStyle(fontSize: 14, color: Colors.white70)),
+        Text(TextConstants.posForText, style: TextStyle(fontSize: 14, color: Colors.white70)),
         _buildToggleButtons(),
         SizedBox(height: 16),
       ],
@@ -278,16 +290,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Taxes",
+        Text(TextConstants.taxesText,
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
         ListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text("Manage taxes", style: TextStyle(color: Colors.grey)),
-          trailing: Text("+ ADD", style: TextStyle(color: Colors.cyan)),
+          title: Text(TextConstants.manageTaxesText, style: TextStyle(color: Colors.grey)),
+          trailing: Text(TextConstants.addBtnText, style: TextStyle(color: Colors.cyan)),
         ),
         ListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text("Enable GST", style: TextStyle(color: Colors.white)),
+          title: Text(TextConstants.enableGSTText, style: TextStyle(color: Colors.white)),
           trailing: Switch(
               value: enableGST,
               onChanged: (value) {
@@ -295,11 +307,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }),
         ),
         Divider(color: Colors.grey[800], height: 32),
-        Text("Language",
+        Text(TextConstants.languageText,
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold , color: Colors.white)),
         ListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text("Choose language", style: TextStyle(color: Colors.grey)),
+          title: Text(TextConstants.chooseLanText, style: TextStyle(color: Colors.grey)),
           trailing: Container(
             padding: EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
@@ -333,30 +345,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Appearance",
+        Text(TextConstants.appearanceText,
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-        Text("Select the screen mode",
+        Text(TextConstants.screenModeText,
             style: TextStyle(fontSize: 14, color: Colors.white)),
         Row(
           children: [
-            _buildAppearanceOption("Light", themeManager),
-            _buildAppearanceOption("Dark", themeManager),
-            _buildAppearanceOption("System", themeManager),
+            _buildAppearanceOption(TextConstants.lightText, themeManager),
+            _buildAppearanceOption(TextConstants.darkText, themeManager),
+            _buildAppearanceOption(TextConstants.systemText, themeManager),
           ],
         ),
-        Text("Select Keyboard Type",
+        Text(TextConstants.selectKeyboardText,
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
         Row(
           children: [
-            _buildRadioOption("Virtual"),
-            _buildRadioOption("System"),
-            _buildRadioOption("Both"),
+            _buildRadioOption(TextConstants.virtualText),
+            _buildRadioOption(TextConstants.systemText),
+            _buildRadioOption(TextConstants.bothText),
           ],
         ),
-        _buildSwitchOption("Quick Product Add", quickProductAdd, (value) {
+        _buildSwitchOption(TextConstants.quickProAddText, quickProductAdd, (value) {
           setState(() => quickProductAdd = value);
         }),
-        _buildSwitchOption("Out Of Stock Manage", outOfStockManage, (value) {
+        _buildSwitchOption(TextConstants.outOfStockMngText, outOfStockManage, (value) {
           setState(() => outOfStockManage = value);
         }),
       ],
@@ -367,9 +379,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Printer Settings",
+        Text(TextConstants.printerSettText,
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-        Text("Select printer & paper size",
+        Text(TextConstants.selectPrintText,
             style: TextStyle(fontSize: 14, color: Colors.grey)),
         SizedBox(height: 80),
         Center(
@@ -382,7 +394,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               SizedBox(height: 20),
               Text(
-                "No Printers Found",
+                TextConstants.noPrinterText,
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
@@ -391,7 +403,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               SizedBox(height: 10),
               Text(
-                "You can add up to 3 Printers",
+                TextConstants.add3PrintersText,
                 style: TextStyle(
                   color: Colors.grey,
                   fontSize: 14,
@@ -409,7 +421,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
                 ),
                 child: Text(
-                  "+ ADD",
+                  TextConstants.addBtnText,
                   style: TextStyle(
                     color: Colors.black,
                     fontSize: 16,
@@ -432,9 +444,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Cache",
+              Text(TextConstants.cacheText,
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-              Text("Manage caching",
+              Text(TextConstants.manageCacheText,
                   style: TextStyle(fontSize: 14, color: Colors.grey)),
             ],
           ),
@@ -443,13 +455,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: ElevatedButton.icon(
                 onPressed: () {},
                 icon: Icon(Icons.delete),
-                label: Text("Clear Cache")),
+                label: Text(TextConstants.clearCacheText)),
           ),
         ]),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text("Cache Duration", style: TextStyle(fontSize: 14, color: Colors.white)),
+            Text(TextConstants.cacheDurationText, style: TextStyle(fontSize: 14, color: Colors.white)),
             DropdownButton<String>(
               value: cacheDuration,
               dropdownColor: Colors.grey[800], // Dropdown background color
@@ -529,7 +541,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   child: Center(
                     child: Text(
-                      "Retailer",
+                      TextConstants.retailerText,
                       style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ),
@@ -552,7 +564,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   child: Center(
                     child: Text(
-                      "Distributor",
+                      TextConstants.distributorText,
                       style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ),
@@ -606,12 +618,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onChanged: (value) {
             setState(() {
               appearance = value.toString();
-              if (value == "Light") {
+              if (value == TextConstants.lightText) {
                 if (kDebugMode) {
                   print("_buildAppearanceOption value 11 : $value");
                 }
                 themeManager.setThemeMode(ThemeMode.light);
-              } else if (value == "Dark") {
+              } else if (value == TextConstants.darkText) {
                 if (kDebugMode) {
                   print("_buildAppearanceOption value 22 : $value");
                 }

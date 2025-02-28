@@ -6,6 +6,8 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:pinaka_pos/Widgets/widget_custom_num_pad.dart';
 
+import '../Constants/text.dart';
+
 class RightOrderPanel extends StatefulWidget {
   final String formattedDate;
   final String formattedTime;
@@ -258,7 +260,7 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                             children: [
                               Icon(Icons.delete, color: Colors.red), // Ensures red tint
                               const SizedBox(height: 4),
-                              const Text('Delete', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                              const Text(TextConstants.deleteText, style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ),
@@ -354,7 +356,7 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text("EBT", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black45)),
+                      Text(TextConstants.ebtText, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black45)),
                       Text("\$0.00", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                     ],
                   ),
@@ -370,7 +372,7 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text("Payouts", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black45)),
+                      Text(TextConstants.payoutsText, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black45)),
                       Text("\$0.00", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                     ],
                   ),
@@ -386,7 +388,7 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text("Subtotal", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black45)),
+                      Text(TextConstants.subTotalText, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black45)),
                       Text("\$0.00", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                     ],
                   ),
@@ -402,7 +404,7 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text("Tax", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                      Text(TextConstants.taxText, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
                       Text("\$0.00", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
                     ],
                   ),
@@ -426,7 +428,7 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                       side: const BorderSide(color: Colors.black),
                     ),
                   ),
-                  child: const Text("Hold Order", style: TextStyle(color: Colors.black)),
+                  child: const Text(TextConstants.holdOrderText, style: TextStyle(color: Colors.black)),
                 ),
               ),
               const SizedBox(width: 10),
@@ -438,7 +440,7 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                   child: Text(
-                    "Pay : \$${(widget.quantities.fold(0.0, (double sum, qty) => sum + qty * 0.99)).toStringAsFixed(2)}",
+                    "${TextConstants.payText} \$${(widget.quantities.fold(0.0, (double sum, qty) => sum + qty * 0.99)).toStringAsFixed(2)}",
                     style: const TextStyle(color: Colors.white),
                   ),
                 ),
@@ -477,7 +479,7 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Title
-                    Text("Enter Quantity for", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+                    Text(TextConstants.enterQuanText, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
                     Text(itemName, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                     SizedBox(height: 12),
 

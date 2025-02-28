@@ -12,7 +12,9 @@ enum SidebarPosition { left, right, bottom }
 enum OrderPanelPosition { left, right }
 
 class FastKeyScreen extends StatefulWidget {
-  const FastKeyScreen({super.key});
+  final int? lastSelectedIndex; //Build #1.0.7: Make it nullable
+
+  const FastKeyScreen({super.key, this.lastSelectedIndex}); // Optional, no default value
 
   @override
   State<FastKeyScreen> createState() => _FastKeyScreenState();
@@ -25,6 +27,21 @@ class _FastKeyScreenState extends State<FastKeyScreen> {
   List<int> quantities = [1, 1, 1, 1];
   SidebarPosition sidebarPosition = SidebarPosition.left; // Default to bottom sidebar
   OrderPanelPosition orderPanelPosition = OrderPanelPosition.right; // Default to right
+  bool isLoading = true; // Add a loading state
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedSidebarIndex = widget.lastSelectedIndex ?? 0; // Build #1.0.7: Restore previous selection
+
+    // Simulate a loading delay
+    Future.delayed(const Duration(seconds: 3), () {
+      setState(() {
+        isLoading = false; // Set loading to false after 3 seconds
+      });
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -80,14 +97,14 @@ class _FastKeyScreenState extends State<FastKeyScreen> {
                   ),
 
                 // Main Content (Horizontal Scroll and Grid View)
-                const Expanded(
+                Expanded(
                   child: Column(
                     children: [
                       // Add the CategoryScroll widget here
-                      CategoryList(isHorizontal: true), // Build #1.0.6 - Added Category list horizontal/ vertical based on bool
+                      CategoryList(isHorizontal: true, isLoading: isLoading),// Build #1.0.7
 
                       // Grid Layout
-                      NestedGridWidget(isHorizontal: true), // Build #1.0.6
+                      NestedGridWidget(isHorizontal: true, isLoading: isLoading), // Build #1.0.7
                     ],
                   ),
                 ),

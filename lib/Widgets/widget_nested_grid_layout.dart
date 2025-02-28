@@ -5,9 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 
+import '../Constants/text.dart';
+import '../Utilities/shimmer_effect.dart';
+
 class NestedGridWidget extends StatefulWidget {
   final bool isHorizontal;
-  const NestedGridWidget({super.key, required this.isHorizontal});
+  final bool isLoading; // Add a loading state
+  const NestedGridWidget({super.key, required this.isHorizontal, this.isLoading = false});
 
   @override
   _NestedGridWidgetState createState() => _NestedGridWidgetState();
@@ -116,7 +120,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
       builder: (BuildContext context) {
         return StatefulBuilder(builder: (context, setStateDialog) {
           return AlertDialog(
-            title: const Text('Search and Add Item'),
+            title: const Text(TextConstants.searchAddItemText),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -124,8 +128,8 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                   TextField(
                     controller: searchController,
                     decoration: const InputDecoration(
-                      labelText: 'Search Item',
-                      hintText: 'Type to search...',
+                      labelText: TextConstants.searchItemText,
+                      hintText: TextConstants.typeSearchText,
                     ),
                     onChanged: (value) {
                       searchProducts(value);
@@ -161,7 +165,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
-                child: const Text('Cancel'),
+                child: const Text(TextConstants.cancelText),
               ),
               TextButton(
                 onPressed: selectedProduct != null
@@ -177,7 +181,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                   Navigator.of(context).pop();
                 }
                     : null,
-                child: const Text('Add'),
+                child: const Text(TextConstants.addText),
               ),
             ],
           );
@@ -239,7 +243,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                     style: ElevatedButton.styleFrom(
                       side: BorderSide(color: theme.secondaryHeaderColor,),
                     ),
-                    child: Text("Back", style: TextStyle(color: theme.secondaryHeaderColor)),
+                    child: Text(TextConstants.backText, style: TextStyle(color: theme.secondaryHeaderColor)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -278,9 +282,9 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
           Expanded(
             child: Container(
               color: Colors.transparent,
-              child: isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : Material(
+              child: widget.isLoading
+                  ? ShimmerEffect.rectangular(height: 200) // Shimmer effect for the grid
+                  :  Material(
                 color: Colors.transparent,
                 child: ReorderableGridView.builder( // Build #1.0.6 - Added Re order for grid
                   padding: const EdgeInsets.all(16),
@@ -316,7 +320,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                               children: const [
                                 Icon(Icons.add, size: 50, color: Colors.green),
                                 SizedBox(height: 8),
-                                Text("Add Item", style: TextStyle(color: Colors.green)),
+                                Text(TextConstants.addItemText, style: TextStyle(color: Colors.green)),
                               ],
                             ),
                           ),

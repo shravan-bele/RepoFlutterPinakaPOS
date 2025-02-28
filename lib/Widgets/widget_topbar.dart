@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import '../Constants/text.dart';
 import '../Utilities/constants.dart';
 
 class TopBar extends StatelessWidget {
@@ -48,7 +49,7 @@ class TopBar extends StatelessWidget {
                 icon: const Icon(Icons.calculate),
               ),
               const Text(
-                'Calculator',
+                TextConstants.calculatorText,
                 style: TextStyle(fontSize: 8),
               ),
             ],
@@ -62,7 +63,7 @@ class TopBar extends StatelessWidget {
                 icon: const Icon(Icons.pause),
               ),
               const Text(
-                'Hold',
+                TextConstants.holdText,
                 style: TextStyle(fontSize: 8),
               ),
             ],
@@ -76,7 +77,7 @@ class TopBar extends StatelessWidget {
                 icon: const Icon(Icons.switch_right),
               ),
               const Text(
-                'Mode',
+                TextConstants.modeText,
                 style: TextStyle(fontSize: 8),
               ),
             ],

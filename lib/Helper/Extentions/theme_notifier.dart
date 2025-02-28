@@ -1,15 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../Models/Theme/theme_model.dart';
+import '../../Preferences/pinaka_preferences.dart';
 
 /// class that will manage the theme data and notify listeners when the theme changes.
 class ThemeNotifier with ChangeNotifier { // Build #1.0.6 - Added Theme code & added to Fast Key Screen for testing
   ThemeMode _themeMode = ThemeMode.light;
+  final PinakaPreferences _preferences = PinakaPreferences(); // Create an instance
+
+  ThemeNotifier() {
+    _loadThemeMode(); // Load saved theme on initialization
+  }
 
   ThemeMode get themeMode => _themeMode;
 
-  void setThemeMode(ThemeMode mode) {
+  Future<void> _loadThemeMode() async {
+    String? savedTheme = await _preferences.getSavedAppThemeMode();
+    _themeMode = _mapStringToThemeMode(savedTheme);
+    notifyListeners();
+  }
+
+  void setThemeMode(ThemeMode mode) async {
     _themeMode = mode;
     notifyListeners();
+    await _preferences.saveAppThemeMode(mode); // Build #1.0.7
+  }
+
+  // Convert String? to ThemeMode
+  ThemeMode _mapStringToThemeMode(String? themeString) {
+    if (themeString == ThemeMode.dark.toString()) {
+      return ThemeMode.dark;
+    } else if (themeString == ThemeMode.light.toString()) {
+      return ThemeMode.light;
+    } else {
+      return ThemeMode.system; // Default
+    }
   }
 
   static const Color lightBackground = Color(0xFFE0E0E0);

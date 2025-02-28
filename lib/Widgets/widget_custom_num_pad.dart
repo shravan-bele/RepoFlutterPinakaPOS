@@ -101,6 +101,8 @@
 
 import 'package:flutter/material.dart';
 
+import '../Constants/text.dart';
+
 enum ActionButtonType { delete, ok, add } //Build #1.0.2 : Updated code - Action button types
 
 class CustomNumPad extends StatelessWidget {
@@ -141,7 +143,7 @@ class CustomNumPad extends StatelessWidget {
 
         // Clear Button (Always Present)
         _buildActionKey(
-          text: "Clear",
+          text: TextConstants.clearText,
           onPressed: onClearPressed,
           color: Colors.white,
           textColor: Colors.black,
@@ -165,11 +167,11 @@ class CustomNumPad extends StatelessWidget {
   String _getActionButtonText() {
     switch (actionButtonType) {
       case ActionButtonType.ok:
-        return "OK";
+        return TextConstants.okText;
       case ActionButtonType.add:
-        return "Add";
+        return TextConstants.addText;
       default:
-        return "Delete";
+        return TextConstants.deleteText;
     }
   }
 

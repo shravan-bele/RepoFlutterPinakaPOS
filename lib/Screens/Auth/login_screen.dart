@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import '../../Constants/text.dart';
 import '../../Widgets/widget_custom_num_pad.dart';
 import '../Home/fast_key_screen.dart';
 
@@ -169,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       child: const Text(
-                        "Login",
+                        TextConstants.loginBtnText,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,

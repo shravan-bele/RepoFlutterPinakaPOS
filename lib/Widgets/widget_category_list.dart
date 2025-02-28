@@ -175,11 +175,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import '../Constants/text.dart';
 import '../Models/FastKey/category_model.dart';
+import '../Utilities/shimmer_effect.dart';
 
 class CategoryList extends StatefulWidget {
   final bool isHorizontal; // Build #1.0.6
-  const CategoryList({super.key, required this.isHorizontal});
+  final bool isLoading; // Add a loading state
+
+  const CategoryList({super.key, required this.isHorizontal, this.isLoading = false});
 
   @override
   _CategoryListState createState() => _CategoryListState();
@@ -244,7 +248,11 @@ class _CategoryListState extends State<CategoryList> {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
-      child: widget.isHorizontal // Build #1.0.6
+      child: widget.isLoading
+          ? ShimmerEffect.rectangular(
+        height: widget.isHorizontal ? 100 : 800, // Adjust height dynamically
+      )
+          : widget.isHorizontal
           ? _buildHorizontalList()
           : _buildVerticalList(),
     );
@@ -253,32 +261,197 @@ class _CategoryListState extends State<CategoryList> {
 
   Widget _buildHorizontalList() {
     var size = MediaQuery.of(context).size; // Get screen size
-    return Row(
-      children: [
-        // Show left scroll button if needed
-        if (_showLeftArrow)
-          _buildScrollButton(Icons.arrow_back_ios, () {
-            // Scroll left
-            _scrollController.animateTo(
-              _scrollController.offset - size.width,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _editingIndex = null; // Build #1.0.7: Dismiss edit mode on tap outside
+        });
+      },
+      child: Row(
+        children: [
+          AnimatedSwitcher( // Build #1.0.7: animation code from surya
+            duration: Duration(milliseconds: 1000),
+            transitionBuilder: (widget, animation) {
+              return FadeTransition(opacity: animation, child: widget);
+            },
+            child: _showLeftArrow
+                ? _buildScrollButton(Icons.arrow_back_ios, () {
+              _scrollController.animateTo(
+                _scrollController.offset - size.width,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            }) : SizedBox.shrink(),
+          ),
+          Expanded(
+            child: SizedBox(
+              height: 110,
+              child: ReorderableListView(
+                scrollController: _scrollController,
+                scrollDirection: Axis.horizontal,
+                onReorderStart: (index) {
+                  if (kDebugMode) {
+                    print("##### onReorderStart $index");
+                  }
+                },
+                onReorder: (oldIndex, newIndex) {
+                  if (newIndex > oldIndex) newIndex--;
+
+                  setState(() {
+                    final item = categories.removeAt(oldIndex);
+                    categories.insert(newIndex, item);
+
+                    // Keep edit mode after reordering
+                    _editingIndex = newIndex;
+
+                    if (_selectedIndex != null) {
+                      if (_selectedIndex == oldIndex) {
+                        _selectedIndex = newIndex;
+                      } else if (oldIndex < _selectedIndex! && newIndex >= _selectedIndex!) {
+                        _selectedIndex = _selectedIndex! - 1;
+                      } else if (oldIndex > _selectedIndex! && newIndex <= _selectedIndex!) {
+                        _selectedIndex = _selectedIndex! + 1;
+                      }
+                    }
+                  });
+                },
+                proxyDecorator: (Widget child, int index, Animation<double> animation) {
+                  return Material(
+                    elevation: 0,
+                    color: Colors.transparent,
+                    child: child,
+                  );
+                },
+                children: List.generate(categories.length, (index) {
+                  final category = categories[index];
+                  bool isSelected = _selectedIndex == index;
+                  bool showEditButton = _editingIndex == index;
+
+                  return GestureDetector(
+                    key: ValueKey(category.name),
+                    onTap: () {
+                      setState(() {
+                        if (_editingIndex == index) {
+                          //Build #1.0.7: If item is in edit mode, just dismiss edit mode
+                          _editingIndex = null;
+                        } else if (_selectedIndex == index) {
+                          //Build #1.0.7: If item is already selected, do nothing (keep selection)
+                          return;
+                        } else {
+                          //Build #1.0.7: If item is not selected, select it
+                          _selectedIndex = index;
+                          _editingIndex = null;
+                        }
+                      });
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 5.0),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
+                        decoration: BoxDecoration(
+                          color: isSelected ? Colors.red : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: showEditButton ? Colors.blueAccent : Colors.black12,
+                            width: showEditButton ? 2 : 1,
+                          ),
+                        ),
+                        child: Stack(
+                          children: [
+                            Positioned(
+                              top: 0,
+                              right: -6,
+                              child: AnimatedOpacity(
+                                duration: const Duration(milliseconds: 300),
+                                opacity: showEditButton ? 1.0 : 0.0,
+                                child: GestureDetector(
+                                  onTap: () => _showCategoryDialog(index: index),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.transparent,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.edit, size: 14, color: Colors.blueAccent),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SvgPicture.asset(category.imageAsset, height: 40, width: 40),
+                                const SizedBox(height: 8),
+                                Text(
+                                  category.name,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: isSelected ? Colors.white : Colors.black,
+                                  ),
+                                ),
+                                Text(
+                                  category.itemCount,
+                                  style: TextStyle(
+                                    color: isSelected ? Colors.white : Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ),
+          AnimatedSwitcher(
+            duration: Duration(milliseconds: 1000),
+            transitionBuilder: (widget, animation) {
+              return FadeTransition(opacity: animation, child: widget);
+            },
+            child: _showRightArrow
+                ? _buildScrollButton(Icons.arrow_forward_ios, () {
+                _scrollController.animateTo(
+                _scrollController.offset + size.width,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            }) : SizedBox.shrink(),
+          ),
+          const SizedBox(width: 8),
+          _buildScrollButton(Icons.add, () {
+            _showCategoryDialog();
           }),
-        Expanded(
-          child: SizedBox(
-            height: 110,
-            child: ReorderableListView( //Build #1.0.4
-              scrollController: _scrollController,
-              scrollDirection: Axis.horizontal,
+        ],
+      ),
+    );
+  }
+
+  ////Build #1.0.7: Dismissal on edit -> Done
+  // 1. On tap of self tab or other tab or outer area
+  // 2. Selected color for the tab should not disappear
+  // 3. Add the padding and margin for the inside data to card
+  Widget _buildVerticalList() {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _editingIndex = null; // Dismiss edit mode on tap outside
+        });
+      },
+      child: Column(
+        children: [
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.7,
+            width: MediaQuery.of(context).size.width * 0.35,
+            child: ReorderableListView(
+              scrollDirection: Axis.vertical,
               onReorderStart: (index) {
                 if (kDebugMode) {
-                  print("##### onReorderStart 123");
+                  print("##### onReorderStart $index");
                 }
-                setState(() {
-                  _editingIndex =
-                      index; // Keep track of the item being reordered
-                });
               },
               onReorder: (oldIndex, newIndex) {
                 if (newIndex > oldIndex) newIndex--;
@@ -287,236 +460,60 @@ class _CategoryListState extends State<CategoryList> {
                   final item = categories.removeAt(oldIndex);
                   categories.insert(newIndex, item);
 
-                  // Adjust _editingIndex if the item was moved
-                  if (_editingIndex == oldIndex) {
-                    _editingIndex = newIndex;
-                  }
+                  // Keep edit mode after reordering
+                  _editingIndex = newIndex;
 
-                  // Only update _selectedIndex if it's not null.
                   if (_selectedIndex != null) {
                     if (_selectedIndex == oldIndex) {
                       _selectedIndex = newIndex;
-                    } else if (oldIndex < _selectedIndex! &&
-                        newIndex >= _selectedIndex!) {
+                    } else if (oldIndex < _selectedIndex! && newIndex >= _selectedIndex!) {
                       _selectedIndex = _selectedIndex! - 1;
-                    } else if (oldIndex > _selectedIndex! &&
-                        newIndex <= _selectedIndex!) {
+                    } else if (oldIndex > _selectedIndex! && newIndex <= _selectedIndex!) {
                       _selectedIndex = _selectedIndex! + 1;
                     }
                   }
                 });
               },
-              proxyDecorator: (Widget child, int index,
-                  Animation<double> animation) {
+              proxyDecorator: (Widget child, int index, Animation<double> animation) {
                 return Material(
-                  elevation: 0, // Remove shadow
-                  color: Colors.transparent, // Make background transparent
+                  elevation: 0,
+                  color: Colors.transparent,
                   child: child,
                 );
               },
               children: List.generate(categories.length, (index) {
                 final category = categories[index];
-                bool isSelected = _selectedIndex ==
-                    index; // Check if item is selected
+                bool isSelected = _selectedIndex == index;
                 bool showEditButton = _editingIndex == index;
 
                 return GestureDetector(
                   key: ValueKey(category.name),
-                  // onLongPressStart: (details) {
-                  //   if (kDebugMode) {
-                  //     print("##### onLongPressStart 123");
-                  //   }
-                  //   setState(() {
-                  //     _editingIndex = index; // Show edit button
-                  //   });
-                  // },
                   onTap: () {
                     setState(() {
-                      if (_selectedIndex == index) {
-                        _selectedIndex = null;
+                      if (_editingIndex == index) {
+                        // If item is in edit mode, just dismiss edit mode
+                        _editingIndex = null;
+                      } else if (_selectedIndex == index) {
+                        // If item is already selected, do nothing (keep selection)
+                        return;
                       } else {
+                        // If item is not selected, select it
                         _selectedIndex = index;
-                        _editingIndex =
-                        null; // Hide edit button when selecting a different item
+                        _editingIndex = null;
                       }
                     });
                   },
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5.0),
+                    padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 5.0),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
-                      padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: isSelected ? Colors.red : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: _editingIndex == index
-                              ? Colors.blueAccent
-                              : Colors.black12,
-                          width: _editingIndex == index
-                              ? 2
-                              : 1, // Slight border change on long press
-                        ),
-                      ),
-                      child: Stack(
-                        children: [
-                          // Edit Button with Animation
-                          Positioned(
-                            top: 0,
-                            right: -6,
-                            child: AnimatedOpacity(
-                              duration: const Duration(milliseconds: 300),
-                              opacity: showEditButton ? 1.0 : 0.0,
-                              child: GestureDetector(
-                                onTap: () =>
-                                    _showCategoryDialog(index: index),
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.transparent,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.edit, size: 14,
-                                      color: Colors.blueAccent),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SvgPicture.asset(
-                                  category.imageAsset, height: 40,
-                                  width: 40),
-                              const SizedBox(height: 8),
-                              Text(
-                                category.name,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: isSelected ? Colors.white : Colors
-                                      .black,
-                                ),
-                              ),
-                              Text(
-                                category.itemCount,
-                                style: TextStyle(
-                                  color: isSelected ? Colors.white : Colors
-                                      .grey,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ),
-        ),
-        // Show right scroll button if needed
-        if (_showRightArrow)
-          _buildScrollButton(Icons.arrow_forward_ios, () {
-            // Scroll right
-            _scrollController.animateTo(
-              _scrollController.offset + size.width,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
-          }),
-        const SizedBox(width: 8),
-        _buildScrollButton(Icons.add, () {
-          _showCategoryDialog();
-        }),
-      ],
-    );
-  }
-
-  Widget _buildVerticalList() {
-    return Column(
-      children: [
-        SizedBox(
-          height: MediaQuery.of(context).size.height * 0.7,
-          width: MediaQuery.of(context).size.width * 0.35,
-          child: ReorderableListView(
-              scrollDirection: Axis.vertical,
-              onReorderStart: (index) {
-                if (kDebugMode) {
-                  print("##### onReorderStart 123");
-                }
-                setState(() {
-                  _editingIndex =
-                      index; // Keep track of the item being reordered
-                });
-              },
-              onReorder: (oldIndex, newIndex) {
-                if (newIndex > oldIndex) newIndex--;
-
-                setState(() {
-                  final item = categories.removeAt(oldIndex);
-                  categories.insert(newIndex, item);
-
-                  // Adjust _editingIndex if the item was moved
-                  if (_editingIndex == oldIndex) {
-                    _editingIndex = newIndex;
-                  }
-
-                  // Only update _selectedIndex if it's not null.
-                  if (_selectedIndex != null) {
-                    if (_selectedIndex == oldIndex) {
-                      _selectedIndex = newIndex;
-                    } else if (oldIndex < _selectedIndex! &&
-                        newIndex >= _selectedIndex!) {
-                      _selectedIndex = _selectedIndex! - 1;
-                    } else if (oldIndex > _selectedIndex! &&
-                        newIndex <= _selectedIndex!) {
-                      _selectedIndex = _selectedIndex! + 1;
-                    }
-                  }
-                });
-              },
-              proxyDecorator: (Widget child, int index,
-                  Animation<double> animation) {
-                return Material(
-                  elevation: 0, // Remove shadow
-                  color: Colors.transparent, // Make background transparent
-                  child: child,
-                );
-              },
-              children: List.generate(categories.length, (index){
-                final category = categories[index];
-                bool isSelected = _selectedIndex ==
-                    index; // Check if item is selected
-                bool showEditButton = _editingIndex == index;
-                return GestureDetector(
-                  key: ValueKey(category.name),
-                  onTap: () {
-                    setState(() {
-                      if (_selectedIndex == index) {
-                        _selectedIndex = null;
-                      } else {
-                        _selectedIndex = index;
-                        _editingIndex =
-                        null; // Hide edit button when selecting a different item
-                      }
-                    });
-                  },
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 5.0),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      padding: const EdgeInsets.fromLTRB(0, 8, 0, 8),
-                      decoration: BoxDecoration(
-                        color: isSelected ? Colors.red : Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: _editingIndex == index
-                              ? Colors.blueAccent
-                              : Colors.black12,
-                          width: _editingIndex == index
-                              ? 2
-                              : 1, // Slight border change on long press
+                          color: showEditButton ? Colors.blueAccent : Colors.black12,
+                          width: showEditButton ? 2 : 1,
                         ),
                       ),
                       child: Stack(
@@ -528,16 +525,14 @@ class _CategoryListState extends State<CategoryList> {
                               duration: const Duration(milliseconds: 300),
                               opacity: showEditButton ? 1.0 : 0.0,
                               child: GestureDetector(
-                                onTap: () =>
-                                    _showCategoryDialog(index: index),
+                                onTap: () => _showCategoryDialog(index: index),
                                 child: Container(
                                   padding: const EdgeInsets.all(4),
                                   decoration: BoxDecoration(
                                     color: Colors.transparent,
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.edit, size: 14,
-                                      color: Colors.blueAccent),
+                                  child: const Icon(Icons.edit, size: 14, color: Colors.blueAccent),
                                 ),
                               ),
                             ),
@@ -569,34 +564,34 @@ class _CategoryListState extends State<CategoryList> {
                                 ],
                               ),
                             ],
-                          )
+                          ),
                         ],
-                      ) ,
+                      ),
                     ),
                   ),
                 );
-              })
+              }),
+            ),
           ),
-        ),
-        SizedBox(height: 8,),
-        Container(
-          width: MediaQuery.of(context).size.width * 0.35,
-          padding: const EdgeInsets.all(1),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.black12),
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+          const SizedBox(height: 50),
+          Container(
+            width: MediaQuery.of(context).size.width * 0.35,
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.black12),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.add, color: Colors.redAccent),
+              onPressed: () {
+                _showCategoryDialog();
+              },
+            ),
           ),
-          child: IconButton(
-            icon: Icon(Icons.add, color: Colors.redAccent),
-            onPressed: (){
-              _showCategoryDialog();
-            },
-          ),
-        )
-      ],
+        ],
+      ),
     );
-
   }
 
   // Helper method to build scroll buttons (left and right)
@@ -629,7 +624,7 @@ class _CategoryListState extends State<CategoryList> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              title: Text(isEditing ? 'Edit Category' : 'Add Category'),
+              title: Text(isEditing ? TextConstants.editCateText : TextConstants.addCateText),
               content: SingleChildScrollView(
                 child: SizedBox(
                   width: MediaQuery.of(context).size.width * 0.2,
@@ -676,7 +671,7 @@ class _CategoryListState extends State<CategoryList> {
                         const Padding(
                           padding: EdgeInsets.only(top: 8.0),
                           child: Text(
-                            'Image is required',
+                            TextConstants.imgRequiredText,
                             style:
                             TextStyle(color: Colors.red, fontSize: 12),
                           ),
@@ -684,11 +679,11 @@ class _CategoryListState extends State<CategoryList> {
                       TextField(
                         controller: nameController,
                         decoration: InputDecoration(
-                          labelText: 'Name',
+                          labelText: TextConstants.nameText,
                           errorText: (!isEditing &&
                               showError &&
                               nameController.text.isEmpty)
-                              ? 'Name is required'
+                              ? TextConstants.nameReqText
                               : null,
                           errorStyle: const TextStyle(
                               color: Colors.red, fontSize: 12),
@@ -702,7 +697,7 @@ class _CategoryListState extends State<CategoryList> {
                         Padding(
                           padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
-                            'Item Count: ${categories[index].itemCount}',
+                            '${TextConstants.itemCountText} ${categories[index].itemCount}',
                             style: const TextStyle(color: Colors.grey),
                           ),
                         ),
@@ -713,7 +708,7 @@ class _CategoryListState extends State<CategoryList> {
               actions: [
                 TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel')),
+                    child: const Text(TextConstants.cancelText)),
                 TextButton(
                   onPressed: () {
                     if (!isEditing &&
@@ -738,12 +733,12 @@ class _CategoryListState extends State<CategoryList> {
                     });
                     Navigator.pop(context);
                   },
-                  child: const Text('Save'),
+                  child: const Text(TextConstants.saveText),
                 ),
                 if (isEditing)
                   TextButton(
                     onPressed: () => _showDeleteConfirmationDialog(index!),
-                    child: const Text('Delete',
+                    child: const Text(TextConstants.deleteText,
                         style: TextStyle(color: Colors.red)),
                   ),
               ],
@@ -760,13 +755,13 @@ class _CategoryListState extends State<CategoryList> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Delete Tab'),
+          title: const Text(TextConstants.deleteTabText),
           content:
-          const Text('Do you want to delete this tab permanently?'),
+          const Text(TextConstants.deleteConfirmText),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context), // Cancel
-              child: const Text('No'),
+              child: const Text(TextConstants.noText),
             ),
             TextButton(
               onPressed: () {
@@ -778,7 +773,7 @@ class _CategoryListState extends State<CategoryList> {
                 Navigator.pop(context); // Close edit dialog
               },
               child:
-              const Text('Yes', style: TextStyle(color: Colors.red)),
+              const Text(TextConstants.yesText, style: TextStyle(color: Colors.red)),
             ),
           ],
         );

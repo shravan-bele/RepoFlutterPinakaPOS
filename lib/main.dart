@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:pinaka_pos/Screens/Home/fast_key_screen.dart';
 import 'package:provider/provider.dart';
 import 'Helper/Extentions/theme_notifier.dart';
+import 'Preferences/pinaka_preferences.dart';
 import 'Screens/Auth/splash_screen.dart';
 
 
-void main() {
+void main() async {
+
+  WidgetsFlutterBinding.ensureInitialized(); // Ensure Flutter services are ready
+  await PinakaPreferences.prepareSharedPref(); //Build #1.0.7: Initialize SharedPreferences
+
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeNotifier(),

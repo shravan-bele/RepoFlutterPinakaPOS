@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:pinaka_pos/Screens/Home/categories_screen.dart';
 import 'package:pinaka_pos/Screens/Home/fast_key_screen.dart';
 
+import '../Constants/text.dart';
 import '../Screens/Home/settings_screen.dart';
 
 class NavigationBar extends StatelessWidget {
@@ -38,6 +39,8 @@ class NavigationBar extends StatelessWidget {
   }
 
   Widget _buildVerticalLayout() {
+    int lastSelectedIndex = 0; // Store last selected index before opening Settings
+
     return LayoutBuilder( //Build #1.0.2 : updated the code for this fix - RenderFlex overflowed by 42 pixels on the bottom
       builder: (context, constraints) {
            if (kDebugMode) {
@@ -47,57 +50,59 @@ class NavigationBar extends StatelessWidget {
         List<Widget> dynamicItems = [
           SidebarButton(
             icon: Icons.flash_on,
-            label: 'Fast Keys',
+            label: TextConstants.fastKeyText,
             isSelected: selectedSidebarIndex == 0,
             onTap: () { // Build #1.0.6
               if (kDebugMode) {
                 print("##### Fast Keys button tapped");
               }
+              lastSelectedIndex = 0; // Store last selection
               onSidebarItemSelected(0);
 
-              /// CategoriesScreen
-              Navigator.pushReplacement(
+              /// FastKeyScreen
+              Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const FastKeyScreen()),
+                MaterialPageRoute(builder: (context) => FastKeyScreen(lastSelectedIndex: lastSelectedIndex)),
               );
             },
             isVertical: isVertical,
           ),
           SidebarButton(
             icon: Icons.category,
-            label: 'Categories',
+            label: TextConstants.categoriesText,
             isSelected: selectedSidebarIndex == 1,
             onTap: () { // Build #1.0.6
               if (kDebugMode) {
                 print("##### Categories button tapped");
               }
+              lastSelectedIndex = 1; //Build #1.0.7: Store last selection
               onSidebarItemSelected(1);
 
               /// CategoriesScreen
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const CategoriesScreen()),
+                MaterialPageRoute(builder: (context) => CategoriesScreen( lastSelectedIndex: lastSelectedIndex)),
               );
             },
             isVertical: isVertical,
           ),
           SidebarButton(
             icon: Icons.add,
-            label: 'Add',
+            label: TextConstants.addText,
             isSelected: selectedSidebarIndex == 2,
             onTap: () => onSidebarItemSelected(2),
             isVertical: isVertical,
           ),
           SidebarButton(
             icon: Icons.shopping_basket,
-            label: 'Orders',
+            label: TextConstants.ordersText,
             isSelected: selectedSidebarIndex == 3,
             onTap: () => onSidebarItemSelected(3),
             isVertical: isVertical,
           ),
           SidebarButton(
             icon: Icons.apps,
-            label: 'Apps',
+            label: TextConstants.appsText,
             isSelected: selectedSidebarIndex == 4,
             onTap: () => onSidebarItemSelected(4),
             isVertical: isVertical,
@@ -111,25 +116,31 @@ class NavigationBar extends StatelessWidget {
             const Divider(color: Colors.black54),
             SidebarButton(
               icon: Icons.settings,
-              label: 'Settings',
+              label: TextConstants.settingsHeaderText,
               isSelected: selectedSidebarIndex == 5,
-              onTap: () { // Build #1.0.6
+              onTap: () {
                 if (kDebugMode) {
-                  print("Settings button tapped");
+                  print("##### Settings button tapped");
                 }
-                onSidebarItemSelected(5);
+                lastSelectedIndex = selectedSidebarIndex; // Build #1.0.7: Store before navigating
 
-                /// SettingsScreen
-                Navigator.pushReplacement(
+                onSidebarItemSelected(5); // Highlight settings
+
+                Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
-                );
+                  MaterialPageRoute(
+                    builder: (context) => SettingsScreen(),
+                  ),
+                ).then((_) {
+                  // Restore the sidebar selection when coming back
+                  onSidebarItemSelected(lastSelectedIndex);
+                });
               },
               isVertical: isVertical,
             ),
             SidebarButton(
               icon: Icons.logout,
-              label: 'Logout',
+              label: TextConstants.logoutText,
               isSelected: selectedSidebarIndex == 6,
               onTap: () => onSidebarItemSelected(6),
               isVertical: isVertical,
@@ -161,6 +172,7 @@ class NavigationBar extends StatelessWidget {
 
 
   Widget _buildHorizontalLayout() {
+    int lastSelectedIndex = 0; // Store last selected index before opening Settings
     return LayoutBuilder( //Build #1.0.2 : updated the code for this fix - RenderFlex overflowed by 42 pixels
       builder: (context, constraints) {
         if (kDebugMode) {
@@ -170,57 +182,59 @@ class NavigationBar extends StatelessWidget {
         List<Widget> dynamicItems = [
           SidebarButton(
             icon: Icons.flash_on,
-            label: 'Fast Keys',
+            label: TextConstants.fastKeyText,
             isSelected: selectedSidebarIndex == 0,
             onTap: () { // Build #1.0.6
               if (kDebugMode) {
                 print("##### Fast Keys button tapped");
               }
+              lastSelectedIndex = 0; // Store last selection
               onSidebarItemSelected(0);
 
-              /// CategoriesScreen
-              Navigator.pushReplacement(
+              /// FastKeyScreen
+              Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const FastKeyScreen()),
+                MaterialPageRoute(builder: (context) => FastKeyScreen(lastSelectedIndex: lastSelectedIndex)),
               );
             },
             isVertical: isVertical,
           ),
           SidebarButton(
             icon: Icons.category,
-            label: 'Categories',
+            label: TextConstants.categoriesText,
             isSelected: selectedSidebarIndex == 1,
             onTap: () { // Build #1.0.6
               if (kDebugMode) {
                 print("##### Categories button tapped");
               }
+              lastSelectedIndex = 1; // Store last selection
               onSidebarItemSelected(1);
 
               /// CategoriesScreen
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const CategoriesScreen()),
+                MaterialPageRoute(builder: (context) => CategoriesScreen(lastSelectedIndex: lastSelectedIndex)),
               );
             },
             isVertical: isVertical,
           ),
           SidebarButton(
             icon: Icons.add,
-            label: 'Add',
+            label: TextConstants.addText,
             isSelected: selectedSidebarIndex == 2,
             onTap: () => onSidebarItemSelected(2),
             isVertical: isVertical,
           ),
           SidebarButton(
             icon: Icons.shopping_basket,
-            label: 'Orders',
+            label: TextConstants.ordersText,
             isSelected: selectedSidebarIndex == 3,
             onTap: () => onSidebarItemSelected(3),
             isVertical: isVertical,
           ),
           SidebarButton(
             icon: Icons.apps,
-            label: 'Apps',
+            label: TextConstants.appsText,
             isSelected: selectedSidebarIndex == 4,
             onTap: () => onSidebarItemSelected(4),
             isVertical: isVertical,
@@ -233,25 +247,31 @@ class NavigationBar extends StatelessWidget {
           const VerticalDivider(color: Colors.black54),
           SidebarButton(
             icon: Icons.settings,
-            label: 'Settings',
+            label: TextConstants.settingsHeaderText,
             isSelected: selectedSidebarIndex == 5,
-            onTap: () { // Build #1.0.6
+            onTap: () {
               if (kDebugMode) {
-                print("Settings button tapped");
+                print("##### Settings button tapped");
               }
-              onSidebarItemSelected(5);
+              lastSelectedIndex = selectedSidebarIndex; // Store before navigating
 
-              /// SettingsScreen
-              Navigator.pushReplacement(
+              onSidebarItemSelected(5); // Highlight settings
+
+              Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-              );
+                MaterialPageRoute(
+                  builder: (context) => SettingsScreen(),
+                ),
+              ).then((_) {
+                // Restore the sidebar selection when coming back
+                onSidebarItemSelected(lastSelectedIndex);
+              });
             },
             isVertical: isVertical,
           ),
           SidebarButton(
             icon: Icons.logout,
-            label: 'Logout',
+            label: TextConstants.logoutText,
             isSelected: selectedSidebarIndex == 6,
             onTap: () => onSidebarItemSelected(6),
             isVertical: isVertical,
