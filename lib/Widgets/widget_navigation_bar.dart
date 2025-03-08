@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pinaka_pos/Screens/Home/categories_screen.dart';
 import 'package:pinaka_pos/Screens/Home/fast_key_screen.dart';
+import 'package:pinaka_pos/Screens/Home/orders_screen.dart';
 
 import '../Constants/text.dart';
 import '../Screens/Home/settings_screen.dart';
@@ -97,7 +98,19 @@ class NavigationBar extends StatelessWidget {
             icon: Icons.shopping_basket,
             label: TextConstants.ordersText,
             isSelected: selectedSidebarIndex == 3,
-            onTap: () => onSidebarItemSelected(3),
+            onTap: () { // Build #1.0.8, Naveen added
+              if (kDebugMode) {
+                print("##### OrdersScreen button tapped");
+              }
+              lastSelectedIndex = 3;
+              onSidebarItemSelected(3);
+
+              /// OrdersScreen
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => OrdersScreen(lastSelectedIndex: lastSelectedIndex)),
+              );
+            },
             isVertical: isVertical,
           ),
           SidebarButton(
@@ -229,7 +242,19 @@ class NavigationBar extends StatelessWidget {
             icon: Icons.shopping_basket,
             label: TextConstants.ordersText,
             isSelected: selectedSidebarIndex == 3,
-            onTap: () => onSidebarItemSelected(3),
+            onTap: () { // Build #1.0.8, Naveen added
+              if (kDebugMode) {
+                print("##### OrdersScreen button tapped");
+              }
+              lastSelectedIndex = 3;
+              onSidebarItemSelected(3);
+
+              /// OrdersScreen
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => OrdersScreen(lastSelectedIndex: lastSelectedIndex)),
+              );
+            },
             isVertical: isVertical,
           ),
           SidebarButton(

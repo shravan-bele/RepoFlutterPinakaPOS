@@ -9,7 +9,7 @@ class UrlHelper {
     _AndroidApiKey : "ANDROID"
   };
 //Hosts
-  static const  String _dev = "http://devapi.pinaka.com/";
+  static const  String _dev = "https://srilokanatha.org/";
   static const  String _uat = "http://uatapi.pinaka.com/";
   static const  String _prod = "http://api.pinaka.com/";
 
@@ -21,24 +21,24 @@ class UrlHelper {
   static const  String host = _dev ;
   static const  String baseUrl = host;
   // static const  String apiKey = _devApiKey ;
-  static late final String _apiKey;
+  static final String apiKey = Platform.isIOS ? _iOSApiKey : _AndroidApiKey; // Build #1.0.8, Naveen updated this line
 
-  static String get apiKey => _apiKey;///do not change this setting in any circumstances
-
-  static set apiKey(String value) {
-    if(Platform.isIOS) {
-      _apiKey = _iOSApiKey;
-    } else if(Platform.isAndroid) {
-      _apiKey = _AndroidApiKey;
-    }
-  }
+  // static String get apiKey => _apiKey;///do not change this setting in any circumstances
+  //
+  // static set apiKey(String value) {
+  //   if(Platform.isIOS) {
+  //     _apiKey = _iOSApiKey;
+  //   } else if(Platform.isAndroid) {
+  //     _apiKey = _AndroidApiKey;
+  //   }
+  // }
   /////END: make changes here to switch environment
 
   static const  String clientID = "IOS";
   static const  String confirmSuccessUrl = baseUrl;
   static const  String markerUrl =  baseUrl;
 
-  static const  String login = "auth/login";
+  static const  String login = "wp-json/pinaka-pos/v1/token"; // Build #1.0.8
   static const  String refresh = "auth/refresh_token";
   static const  String signup = "auth/signup";
   static const  String forgotPassword = "auth/reestpassword";

@@ -6,12 +6,15 @@ import 'package:image_picker/image_picker.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 
 import '../Constants/text.dart';
+import '../Database/db_helper.dart';
 import '../Utilities/shimmer_effect.dart';
 
 class NestedGridWidget extends StatefulWidget {
   final bool isHorizontal;
   final bool isLoading; // Add a loading state
-  const NestedGridWidget({super.key, required this.isHorizontal, this.isLoading = false});
+  final VoidCallback? onItemAdded; // Make it optional (nullable) // Callback to notify when an item is added
+
+  const NestedGridWidget({super.key, required this.isHorizontal, this.isLoading = false, this.onItemAdded});
 
   @override
   _NestedGridWidgetState createState() => _NestedGridWidgetState();
@@ -21,14 +24,14 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
   // Nested items with different icons and titles
   List<List<Map<String, dynamic>>> nestedItems = [
     [
-      {"title": "Apple", "icon": Icons.apple, "price": "\$0.99", "image": "https://via.placeholder.com/50"},
-      {"title": "Banana", "icon": Icons.local_grocery_store, "price": "\$1.99", "image": "https://via.placeholder.com/50"},
-      {"title": "Carrot", "icon": Icons.eco, "price": "\$2.99", "image": "https://via.placeholder.com/50"},
+      {"id": 101, "title": "Apple", "icon": Icons.apple, "price": "\$0.99", "image": "https://via.placeholder.com/50"},
+      {"id": 102, "title": "Banana", "icon": Icons.local_grocery_store, "price": "\$1.99", "image": "https://via.placeholder.com/50"},
+      {"id": 103, "title": "Carrot", "icon": Icons.eco, "price": "\$2.99", "image": "https://via.placeholder.com/50"},
     ],
     [
-      {"title": "Milk", "icon": Icons.local_drink, "price": "\$3.99", "image": "https://via.placeholder.com/50"},
-      {"title": "Bread", "icon": Icons.bakery_dining, "price": "\$4.99", "image": "https://via.placeholder.com/50"},
-      {"title": "Cheese", "icon": Icons.lunch_dining, "price": "\$5.99", "image": "https://via.placeholder.com/50"},
+      {"id": 104, "title": "Milk", "icon": Icons.local_drink, "price": "\$3.99", "image": "https://via.placeholder.com/50"},
+      {"id": 105, "title": "Bread", "icon": Icons.bakery_dining, "price": "\$4.99", "image": "https://via.placeholder.com/50"},
+      {"id": 106, "title": "Cheese", "icon": Icons.lunch_dining, "price": "\$5.99", "image": "https://via.placeholder.com/50"},
     ],
   ];
 
@@ -57,12 +60,38 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
     }
   }
 
-  void _onItemSelected(int index) {
+  void _onItemSelected(int index) async{
     if (currentLevel + 1 < nestedItems.length) {
+      // Navigate to the next level (if it exists)
       setState(() {
         currentLevel++;
         navigationPath.add(nestedItems[currentLevel - 1][index]["title"]);
       });
+    } else {
+      // Add the selected item to the database (only if it's the last level)
+      final selectedProduct = nestedItems[currentLevel][index];
+      // final orderItem = {
+      //   AppDBConst.productId: selectedProduct["title"],
+      //   AppDBConst.productName: selectedProduct["title"],
+      //   AppDBConst.productPrice: double.parse(selectedProduct["price"].replaceAll('\$', '')),
+      //   AppDBConst.productQuantity: 1, // Default quantity
+      // };
+      //
+      // // Add to the database
+      // DBHelper.instance.insertOrderItem(orderItem);
+      await DBHelper.instance.addItemToOrder(
+          101, // User ID
+          selectedProduct["id"], // Order ID
+          selectedProduct["title"], // Item Name
+          selectedProduct["image"], // Image URL
+          double.parse(selectedProduct["price"].replaceAll('\$', '')), // Price
+          3 // Quantity
+      );
+
+      // Notify the parent widget (RightOrderPanel) to refresh the order list
+      if (widget.onItemAdded != null) {
+        widget.onItemAdded!(); // Call the callback only if it's not null
+      } // Optionally, refresh the order list in the UI
     }
   }
 

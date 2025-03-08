@@ -1,9 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import '../../Blocs/Auth/login_bloc.dart';
 import '../../Constants/text.dart';
+import '../../Helper/api_response.dart';
+import '../../Models/Auth/login_model.dart';
+import '../../Repositories/Auth/login_repository.dart';
 import '../../Widgets/widget_custom_num_pad.dart';
+import '../../Widgets/widget_loading.dart';
 import '../Home/fast_key_screen.dart';
+import '../../Widgets/widget_error.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,6 +20,21 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final List<String> _password = List.filled(6, ""); // Password storage
+  late LoginRequest _request;
+  late LoginBloc _bloc;
+
+  @override
+  void initState() {
+  super.initState();
+  _request = LoginRequest("pinaka_employee", "pinaka_employee@123"); // Build #1.0.8 - added for test
+  _bloc = LoginBloc(LoginRepository(_request));
+  }
+
+  @override
+  void dispose() {
+    _bloc.dispose();
+    super.dispose();
+  }
 
   // Update password on digit press
   void _updatePassword(String value) {
@@ -69,10 +90,10 @@ class _LoginScreenState extends State<LoginScreen> {
           Expanded(
             flex: 1,
             child: Container(
-              color: const Color(0xFF1E2745), // background: #1E2745
+              color: const Color(0xFF1E2745), // Background color: #1E2745
               child: Center(
                 child: SvgPicture.asset(
-                  'assets/svg/app_logo.svg', // Path to your SVG
+                  'assets/svg/app_logo.svg', // Path to your SVG logo
                   height: 150, // Set the height of the logo
                 ),
               ),
@@ -102,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             width: isPortrait ? 50.0 : 70.0,
                             height: isPortrait ? 50.0 : 70.0,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFFFFFF), //background: #FFFFFF;
+                              color: const Color(0xFFFFFFFF), // Background color: #FFFFFF
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                   color: Colors.grey.shade300, width: 1),
@@ -155,26 +176,108 @@ class _LoginScreenState extends State<LoginScreen> {
                           print("Login pressed");
                           print("#### Entered OTP : $_password");
                         }
-                        /// FastKeyScreen
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => const FastKeyScreen()),
-                        );
+
+                        /// login api
+                        _bloc.fetchLoginToken(); // Build #1.0.8
+
+                        _bloc.loginStream.listen((event) async {
+                          if (event.status == Status.COMPLETED) {
+                            if (event.data?.token != null) {
+                              // Navigate to FastKeyScreen
+                              if(mounted) {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const FastKeyScreen(),
+                                  ),
+                                );
+                              }
+                            }
+                          }
+                        });
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1E2745), // background: #1E2745
+                        backgroundColor: const Color(0xFF1E2745), // Background color: #1E2745
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        TextConstants.loginBtnText,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      child: StreamBuilder<APIResponse<LoginResponse>>(
+                        stream: _bloc.loginStream,
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            switch (snapshot.data?.status) {
+                              case Status.LOADING:
+                                if (kDebugMode) {
+                                  print("LOADING ");
+                                }
+                                return Loading(
+                                    loadingMessage: snapshot.data?.message);
+                                break;
+                              case Status.COMPLETED:
+                                if (kDebugMode) {
+                                  print("COMPLETED ");
+                                }
+                                if (snapshot.data?.data?.token != null) {
+                                  if (kDebugMode) {
+                                    print('login token not null: ${snapshot.data?.data?.token}');
+                                  }
+                                  return Loading(
+                                      loadingMessage: TextConstants.loading);
+                                } else {
+                                  var error = snapshot.data?.data?.message ?? "";
+                                  snapshot.data?.data?.message = TextConstants.login;
+                                  return Text(
+                                    error,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                      color: Colors.red,
+                                    ),
+                                  );
+                                }
+                                break;
+                              case Status.ERROR:
+                                if (kDebugMode) {
+                                  print("Error LoginView...${snapshot.data?.message}");
+                                }
+                                String? message = snapshot.data?.message ?? "";
+                                // String errorMsgText = LoggerHelper.splitBeforeException(message);
+                                return Text(
+                                  message,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                    color: Colors.red,
+                                  ),
+                                );
+                                // return Error(
+                                //   errorMessage: message,
+                                //   onRetryPressed: () => _bloc.fetchLoginToken(),
+                                // );
+                                break;
+                              default:
+                                break;
+                            }
+                          } else {
+                            if (kDebugMode) {
+                              print("else snapshot is empty ");
+                            }
+                          }
+
+                          return const Text(
+                            TextConstants.loginBtnText,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                             // color: CustomColors.darkBlueTextButtonColor,
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),

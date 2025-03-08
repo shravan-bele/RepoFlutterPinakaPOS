@@ -105,6 +105,10 @@ class TextConstants { // Build #1.0.7 , Naveen - added TextConstants and SharedP
   static const String holdText              = "Hold";
   static const String modeText              = "Mode";
 
+  static const String login                 = "LOGIN"; // Build #1.0.8
+  static const String loading               = "loading";
+  static const String jsonfileExtension     = ".json";
+
 
 }
 

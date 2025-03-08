@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:pinaka_pos/Widgets/widget_custom_num_pad.dart';
+import 'package:pinaka_pos/Widgets/widget_nested_grid_layout.dart';
 
 import '../Constants/text.dart';
+import '../Database/db_helper.dart';
 
 class RightOrderPanel extends StatefulWidget {
   final String formattedDate;
@@ -32,11 +34,28 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
 
   TabController? _tabController;
   final ScrollController _scrollController = ScrollController();
+  List<Map<String, dynamic>> orderItems = [];
 
   @override
   void initState() {
     super.initState();
     _initializeTabController();
+    _loadOrderItems();
+  }
+
+  void _refreshOrderList() {
+    _loadOrderItems(); // Refresh the order list
+  }
+
+  Future<void> _loadOrderItems() async {
+    List<Map<String, dynamic>> orders = await DBHelper.instance.getUserOrders(101);
+    if (kDebugMode) {
+      print("##### orders :$orders");
+    }
+    setState(() {
+      orderItems = orders;
+     // orderItems = List<Map<String, dynamic>>.from(orders); // Create a mutable copy
+    });
   }
 
   void _initializeTabController() {
@@ -221,11 +240,11 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
               if (oldIndex < newIndex) newIndex -= 1;
 
               setState(() {
-                final movedQuantity = widget.quantities.removeAt(oldIndex);
-                widget.quantities.insert(newIndex, movedQuantity);
+                final movedItem = orderItems.removeAt(oldIndex);
+                orderItems.insert(newIndex, movedItem);
               });
             },
-            itemCount: widget.quantities.length,
+            itemCount: orderItems.length,
             proxyDecorator: (Widget child, int index, Animation<double> animation) {
               return Material(
                 color: Colors.transparent, // Removes white background
@@ -233,6 +252,7 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
               );
             },
             itemBuilder: (context, index) {
+              final orderItem = orderItems[index];
               return ClipRRect(
                 key: ValueKey(index),
                 borderRadius: BorderRadius.circular(20),
@@ -250,9 +270,7 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                             if (kDebugMode) {
                               print("Deleting item at index $index");
                             } // Debug print
-                            setState(() {
-                              widget.quantities.removeAt(index);
-                            });
+                            _deleteOrderItem(index); // Call the delete method
                           },
                           backgroundColor: Colors.transparent, // No background color
                           child: Column(
@@ -268,13 +286,11 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                     ),
                     child: GestureDetector(
                       onTap: () {
-                        if (kDebugMode) {
-                          print("Item tapped: Bud Light Test");
-                        } // Debug print
-                        showNumPadDialog(context, "Bud Light Test", (selectedQuantity) {
-                          if (kDebugMode) {
-                            print("Selected Quantity: $selectedQuantity");
-                          }
+                        showNumPadDialog(context, orderItem[AppDBConst.itemName], (selectedQuantity) {
+                          setState(() {
+                            orderItem[AppDBConst.itemQuantity] = selectedQuantity;
+                          });
+                          DBHelper.instance.updateOrderItem(orderItem[AppDBConst.orderId], orderItem[AppDBConst.itemId], orderItem[AppDBConst.itemQuantity]);
                         });
                       },
                       child: Container(
@@ -308,12 +324,13 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    "Bud Light Length was too long for test".length > 15
-                                        ? '${"Bud Light Length was too long for test".substring(0, 15)}...'
-                                        : "Bud Light",
+                                    orderItem[AppDBConst.itemName],
                                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
                                   ),
-                                  const Text("6 * \$0.99", style: TextStyle(color: Colors.black54)),
+                                  Text(
+                                    "6 * \$${orderItem[AppDBConst.itemPrice]}",
+                                    style: const TextStyle(color: Colors.black54),
+                                  ),
                                 ],
                               ),
                             ),
@@ -321,7 +338,7 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  "\$${(widget.quantities[index] * 0.99).toStringAsFixed(2)}",
+                                  "\$${(orderItem[AppDBConst.itemQuantity] * orderItem[AppDBConst.itemPrice]).toStringAsFixed(2)}",
                                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                                 ),
                               ],
@@ -450,6 +467,18 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
         )
       ],
     );
+  }
+  /// Delete an Item from the List
+  Future<void> _deleteOrderItem(int index) async {
+    final orderId = orderItems[index][AppDBConst.orderId];
+
+    // Delete from the database
+    await DBHelper.instance.deleteItem(orderId);
+
+    // Update the UI
+    setState(() {
+      orderItems.removeAt(index); // Remove from the mutable list
+    });
   }
 
   /// //Build #1.0.2 : Added showNumPadDialog if user tap on order layout list item
