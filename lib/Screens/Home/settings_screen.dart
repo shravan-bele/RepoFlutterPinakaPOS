@@ -46,9 +46,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _loadAppThemeMode(); // Appearance light/dark/system
   }
 
-  Future<void> _loadAppThemeMode() async { // Build #1.0.7: get theme from preference value
-    appearance = await _preferences.getSavedAppThemeMode();
-    setState(() {}); // Update UI
+  Future<void> _loadAppThemeMode() async { // Build #1.0.9 : By default dark theme getting selected on launch even after changing from settings
+    String? savedTheme = await _preferences.getSavedAppThemeMode();
+
+    setState(() {
+      if (savedTheme == ThemeMode.light.toString()) {
+        appearance = TextConstants.lightText;
+      } else if (savedTheme == ThemeMode.dark.toString()) {
+        appearance = TextConstants.darkText;
+      } else {
+        appearance = TextConstants.systemText;
+      }
+    });
+
     if (kDebugMode) {
       print("#### _loadAppThemeMode : $appearance");
     }
@@ -618,15 +628,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onChanged: (value) {
             setState(() {
               appearance = value.toString();
-              if (value == TextConstants.lightText) {
-                if (kDebugMode) {
-                  print("_buildAppearanceOption value 11 : $value");
-                }
+              if (appearance == TextConstants.lightText) {
                 themeManager.setThemeMode(ThemeMode.light);
-              } else if (value == TextConstants.darkText) {
-                if (kDebugMode) {
-                  print("_buildAppearanceOption value 22 : $value");
-                }
+              } else if (appearance == TextConstants.darkText) {
                 themeManager.setThemeMode(ThemeMode.dark);
               } else {
                 if (kDebugMode) {
@@ -634,6 +638,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 }
                 themeManager.setThemeMode(ThemeMode.system);
               }
+
+              // Save the selected theme mode to preferences
+              _preferences.saveAppThemeMode(themeManager.themeMode); // Build #1.0.9 : By default dark theme getting selected on launch even after changing from settings
             });
           },
           fillColor: WidgetStateProperty.resolveWith<Color>((states) {

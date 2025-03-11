@@ -11,9 +11,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Ensure Flutter services are ready
   await PinakaPreferences.prepareSharedPref(); //Build #1.0.7: Initialize SharedPreferences
 
+  ThemeNotifier themeNotifier = ThemeNotifier();
+  await themeNotifier.initializeThemeMode(); // Build #1.0.9 : By default dark theme getting selected on launch even after changing from settings
+
   runApp(
     ChangeNotifierProvider(
-      create: (_) => ThemeNotifier(),
+      create: (_) => themeNotifier,
       child: const MyApp(),
     ),
   );

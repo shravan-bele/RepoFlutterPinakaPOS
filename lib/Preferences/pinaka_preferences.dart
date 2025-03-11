@@ -19,15 +19,7 @@ class PinakaPreferences { // Build #1.0.7 , Naveen - added PinakaPreferences cod
   }
 
   // Get ThemeMode from SharedPreferences
-  Future<String?> getSavedAppThemeMode() async {
-    String? savedTheme = _prefs.getString(SharedPreferenceTextConstants.themeModeKey);
-
-    if (savedTheme == ThemeMode.dark.toString()) {
-      return TextConstants.darkText;
-    } else if (savedTheme == ThemeMode.light.toString()) {
-      return TextConstants.lightText;
-    } else {
-      return TextConstants.systemText; // Default to system if no value found
-    }
+  Future<String?> getSavedAppThemeMode() async { // Build #1.0.9 : By default dark theme getting selected on launch even after changing from settings
+    return _prefs.getString(SharedPreferenceTextConstants.themeModeKey);
   }
 }

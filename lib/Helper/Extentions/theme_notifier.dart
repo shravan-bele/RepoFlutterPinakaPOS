@@ -8,11 +8,14 @@ class ThemeNotifier with ChangeNotifier { // Build #1.0.6 - Added Theme code & a
   ThemeMode _themeMode = ThemeMode.light;
   final PinakaPreferences _preferences = PinakaPreferences(); // Create an instance
 
-  ThemeNotifier() {
-    _loadThemeMode(); // Load saved theme on initialization
-  }
+  ThemeNotifier();
 
   ThemeMode get themeMode => _themeMode;
+
+  /// Public method to initialize theme mode
+  Future<void> initializeThemeMode() async { // Build #1.0.9 : By default dark theme getting selected on launch even after changing from settings
+    await _loadThemeMode();
+  }
 
   Future<void> _loadThemeMode() async {
     String? savedTheme = await _preferences.getSavedAppThemeMode();
