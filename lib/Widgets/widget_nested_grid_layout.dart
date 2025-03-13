@@ -7,6 +7,7 @@ import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 
 import '../Constants/text.dart';
 import '../Database/db_helper.dart';
+import '../Database/order_helper.dart';
 import '../Utilities/shimmer_effect.dart';
 
 class NestedGridWidget extends StatefulWidget {
@@ -43,6 +44,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
 
   File? _pickedImage;
   final ImagePicker _picker = ImagePicker();
+  final OrderHelper orderHelper = OrderHelper();
 
   @override
   void initState() {
@@ -60,7 +62,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
     }
   }
 
-  void _onItemSelected(int index) async{
+  void _onItemSelected(int index) async {
     if (currentLevel + 1 < nestedItems.length) {
       // Navigate to the next level (if it exists)
       setState(() {
@@ -70,28 +72,14 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
     } else {
       // Add the selected item to the database (only if it's the last level)
       final selectedProduct = nestedItems[currentLevel][index];
-      // final orderItem = {
-      //   AppDBConst.productId: selectedProduct["title"],
-      //   AppDBConst.productName: selectedProduct["title"],
-      //   AppDBConst.productPrice: double.parse(selectedProduct["price"].replaceAll('\$', '')),
-      //   AppDBConst.productQuantity: 1, // Default quantity
-      // };
-      //
-      // // Add to the database
-      // DBHelper.instance.insertOrderItem(orderItem);
-      await DBHelper.instance.addItemToOrder(
-          101, // User ID
-          selectedProduct["id"], // Order ID
-          selectedProduct["title"], // Item Name
-          selectedProduct["image"], // Image URL
-          double.parse(selectedProduct["price"].replaceAll('\$', '')), // Price
-          3 // Quantity
+      await orderHelper.addItemToOrder( // Build #1.0.10 - Naveen
+        selectedProduct["title"],
+        selectedProduct["image"],
+        double.parse(selectedProduct["price"].replaceAll('\$', '')),
+        1,
+        'SKU$index',
+        onItemAdded: widget.onItemAdded, // Pass the callback
       );
-
-      // Notify the parent widget (RightOrderPanel) to refresh the order list
-      if (widget.onItemAdded != null) {
-        widget.onItemAdded!(); // Call the callback only if it's not null
-      } // Optionally, refresh the order list in the UI
     }
   }
 

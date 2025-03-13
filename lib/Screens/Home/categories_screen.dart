@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../../Widgets/widget_category_list.dart';
 import '../../Widgets/widget_nested_grid_layout.dart';
 import '../../Widgets/widget_order_panel.dart';
@@ -40,6 +42,14 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       setState(() {
         isLoading = false; // Set loading to false after 3 seconds
       });
+    });
+  }
+
+  void _refreshOrderList() { // Build #1.0.10 - Naveen: This will trigger a rebuild of the RightOrderPanel (Callback)
+    setState(() {
+      if (kDebugMode) {
+        print("###### CategoriesScreen _refreshOrderList");
+      }
     });
   }
 
@@ -94,6 +104,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     formattedDate: formattedDate,
                     formattedTime: formattedTime,
                     quantities: quantities,
+                    refreshOrderList: _refreshOrderList, // Pass the callback
                   ),
 
                 // Main Content (Horizontal Scroll and Grid View)
@@ -105,7 +116,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                           child: CategoryList(isHorizontal: false, isLoading: isLoading) // Build #1.0.7
                       ),
                       // Grid Layout
-                       NestedGridWidget(isHorizontal: false, isLoading: isLoading), // Build #1.0.7
+                       NestedGridWidget(isHorizontal: false, isLoading: isLoading,  onItemAdded: _refreshOrderList), // Build #1.0.10
                     ],
                   ),
                 ),
@@ -117,6 +128,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     formattedDate: formattedDate,
                     formattedTime: formattedTime,
                     quantities: quantities,
+                    refreshOrderList: _refreshOrderList, // Pass the callback
                   ),
 
                 // Right Sidebar (Conditional)

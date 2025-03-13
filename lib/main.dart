@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pinaka_pos/Screens/Home/fast_key_screen.dart';
 import 'package:provider/provider.dart';
+import 'Database/db_helper.dart';
 import 'Helper/Extentions/theme_notifier.dart';
 import 'Preferences/pinaka_preferences.dart';
 import 'Screens/Auth/splash_screen.dart';
@@ -14,6 +15,7 @@ void main() async {
   ThemeNotifier themeNotifier = ThemeNotifier();
   await themeNotifier.initializeThemeMode(); // Build #1.0.9 : By default dark theme getting selected on launch even after changing from settings
 
+  await DBHelper.instance.database; // Build #1.0.10: Initialize the database
   runApp(
     ChangeNotifierProvider(
       create: (_) => themeNotifier,

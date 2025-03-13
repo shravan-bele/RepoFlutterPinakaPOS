@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import '../../Blocs/Auth/login_bloc.dart';
 import '../../Constants/text.dart';
+import '../../Database/db_helper.dart';
 import '../../Helper/api_response.dart';
 import '../../Models/Auth/login_model.dart';
 import '../../Repositories/Auth/login_repository.dart';
@@ -28,6 +29,20 @@ class _LoginScreenState extends State<LoginScreen> {
   super.initState();
   _request = LoginRequest("pinaka_employee", "pinaka_employee@123"); // Build #1.0.8 - added for test
   _bloc = LoginBloc(LoginRepository(_request));
+ // createTestUserDB();
+  }
+
+  Future<void> createTestUserDB() async { // Build #1.0.10 : Added test user db
+    final db = await DBHelper.instance.database;
+    await db.insert(AppDBConst.userTable, {
+      AppDBConst.userName: 'pinaka_employee',
+      AppDBConst.userEmail: 'pinaka_employee@123',
+      AppDBConst.userPhone: '1234567890', // Optional
+      AppDBConst.userAddress: '123 Main St', // Optional
+    });
+    if (kDebugMode) {
+      print('User created successfully');
+    }
   }
 
   @override

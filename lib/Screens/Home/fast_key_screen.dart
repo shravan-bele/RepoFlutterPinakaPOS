@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../Widgets/widget_category_list.dart';
@@ -42,6 +43,13 @@ class _FastKeyScreenState extends State<FastKeyScreen> {
     });
   }
 
+  void _refreshOrderList() { // Build #1.0.10 - Naveen: This will trigger a rebuild of the RightOrderPanel (Callback)
+    setState(() {
+      if (kDebugMode) {
+        print("###### FastKeyScreen _refreshOrderList");
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,6 +102,7 @@ class _FastKeyScreenState extends State<FastKeyScreen> {
                     formattedDate: formattedDate,
                     formattedTime: formattedTime,
                     quantities: quantities,
+                    refreshOrderList: _refreshOrderList, // Pass the callback
                   ),
 
                 // Main Content (Horizontal Scroll and Grid View)
@@ -104,7 +113,7 @@ class _FastKeyScreenState extends State<FastKeyScreen> {
                       CategoryList(isHorizontal: true, isLoading: isLoading),// Build #1.0.7
 
                       // Grid Layout
-                      NestedGridWidget(isHorizontal: true, isLoading: isLoading), // Build #1.0.7
+                      NestedGridWidget(isHorizontal: true, isLoading: isLoading,  onItemAdded: _refreshOrderList), // Build #1.0.10
                     ],
                   ),
                 ),
@@ -116,6 +125,7 @@ class _FastKeyScreenState extends State<FastKeyScreen> {
                     formattedDate: formattedDate,
                     formattedTime: formattedTime,
                     quantities: quantities,
+                    refreshOrderList: _refreshOrderList, // Pass the callback
                   ),
 
                 // Right Sidebar (Conditional)

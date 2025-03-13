@@ -9,16 +9,19 @@ import 'package:pinaka_pos/Widgets/widget_nested_grid_layout.dart';
 
 import '../Constants/text.dart';
 import '../Database/db_helper.dart';
+import '../Database/order_helper.dart';
 
 class RightOrderPanel extends StatefulWidget {
   final String formattedDate;
   final String formattedTime;
   final List<int> quantities;
+  final VoidCallback? refreshOrderList;
 
   const RightOrderPanel({
     required this.formattedDate,
     required this.formattedTime,
     required this.quantities,
+    this.refreshOrderList,
     Key? key,
   }) : super(key: key);
 
@@ -27,57 +30,114 @@ class RightOrderPanel extends StatefulWidget {
 }
 
 class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderStateMixin {
-  List<Map<String, String>> tabs = [
-    {"title": "#57751", "subtitle": "Tab 1"},
-    {"title": "#57752", "subtitle": "Tab 2"}
-  ];
-
-  TabController? _tabController;
-  final ScrollController _scrollController = ScrollController();
-  List<Map<String, dynamic>> orderItems = [];
+  List<Map<String, Object>> tabs = []; // List of order tabs
+  TabController? _tabController; // Controller for tab switching
+  final ScrollController _scrollController = ScrollController(); // Scroll controller for tab scrolling
+  List<Map<String, dynamic>> orderItems = []; // List of items in the selected order
+  final OrderHelper orderHelper = OrderHelper(); // Helper instance to manage orders
 
   @override
   void initState() {
     super.initState();
-    _initializeTabController();
-    _loadOrderItems();
+    _getOrderTabs(); // Load existing orders into tabs
   }
 
-  void _refreshOrderList() {
-    _loadOrderItems(); // Refresh the order list
-  }
+  @override
+  void didUpdateWidget(RightOrderPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _getOrderTabs(); // Build #1.0.10 : Reload tabs when the widget updates (e.g., after item selection)
 
-  Future<void> _loadOrderItems() async {
-    List<Map<String, dynamic>> orders = await DBHelper.instance.getUserOrders(101);
     if (kDebugMode) {
-      print("##### orders :$orders");
+      print("##### RightOrderPanel didUpdateWidget");
     }
-    setState(() {
-      orderItems = orders;
-     // orderItems = List<Map<String, dynamic>>.from(orders); // Create a mutable copy
-    });
   }
 
+  // Build #1.0.10: Fetches the list of order tabs from OrderHelper
+  void _getOrderTabs() async {
+    await orderHelper.loadData(); // Load order data from DB
+
+    setState(() {
+      // Convert order IDs into tab format
+      tabs = orderHelper.orderIds.asMap().entries.map((entry) => {
+        "title": "#${entry.value}", // Order number
+        "subtitle": "Tab ${entry.key + 1}", // Tab position
+        "orderId": entry.value as Object, // Order ID
+      }).toList();
+    });
+
+    _initializeTabController(); // Initialize tab controller
+
+    if (tabs.isNotEmpty) {
+      // Set the current tab index to match the active order
+      if (orderHelper.activeOrderId != null) {
+        int index = orderHelper.orderIds.indexOf(orderHelper.activeOrderId!);
+        _tabController?.index = index;
+      } else {
+        _tabController?.index = tabs.length - 1; // Default to last tab if no active order
+      }
+
+      await orderHelper.setActiveOrder(orderHelper.activeOrderId!); // Save active order
+      fetchOrderItems(); // Load items for active order
+    }
+  }
+
+  // Build #1.0.10: Fetches order items for the active order
+  Future<void> fetchOrderItems() async {
+    if (orderHelper.activeOrderId != null) {
+      List<Map<String, dynamic>> items = await DBHelper.instance.getOrderItems(orderHelper.activeOrderId!);
+
+      if (kDebugMode) {
+        print("##### fetchOrderItems :$items");
+      }
+
+      setState(() {
+        orderItems = items; // Update the order items list
+      });
+    } else {
+      setState(() {
+        orderItems.clear(); // Clear the order items list if no active order
+      });
+    }
+  }
+
+  // Build #1.0.10: Initializes the tab controller and handles tab switching
   void _initializeTabController() {
-    _tabController?.dispose(); // Dispose the old one safely
+    _tabController?.dispose(); // Dispose the existing controller
     _tabController = TabController(length: tabs.length, vsync: this);
-    _tabController!.addListener(() {
+
+    _tabController!.addListener(() async {
       if (mounted) {
-        setState(() {}); // Update the state when tab changes
+        int selectedIndex = _tabController!.index; // Get selected tab index
+        int selectedOrderId = tabs[selectedIndex]["orderId"] as int;
+
+        await orderHelper.setActiveOrder(selectedOrderId); // Set new active order
+        fetchOrderItems(); // Load items for the selected order
+        setState(() {}); // Refresh UI
       }
     });
   }
 
-  void addNewTab() {
+  // Build #1.0.10: Creates a new order and adds it as a new tab
+  void addNewTab() async {
+    int orderId = await orderHelper.createOrder(); // Create a new order
+    await orderHelper.setActiveOrder(orderId); // Set the new order as active
+
     setState(() {
-      tabs.add({"title": "#${tabs.length + 57751}", "subtitle": "Tab ${tabs.length + 1}"});
-      _initializeTabController();
-      _tabController!.index = tabs.length - 1;
+      tabs.add({
+        "title": "#$orderId", // New order number
+        "subtitle": "Tab ${tabs.length + 1}", // Tab position
+        "orderId": orderId as Object,
+      });
     });
-    _scrollToSelectedTab();
+
+    _initializeTabController(); // Reinitialize tab controller
+    _tabController?.index = tabs.length - 1; // Select the new tab
+    _scrollToSelectedTab(); // Ensure new tab is visible
+    fetchOrderItems(); // Load items for the new order
   }
 
-  void _scrollToSelectedTab() { //Build #1.0.4
+  // Scrolls to the last tab to ensure visibility
+  void _scrollToSelectedTab() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -89,17 +149,56 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
     });
   }
 
-  void removeTab(int index) {
-    if (tabs.length > 1) {
-      int newIndex = _tabController!.index;
+  // Build #1.0.10: Removes a tab (order) from the UI and database
+  void removeTab(int index) async {
+    if (tabs.isNotEmpty) {
+      int orderId = tabs[index]["orderId"] as int;
+      bool isRemovedTabActive = orderId == orderHelper.activeOrderId;
+
+      await orderHelper.deleteOrder(orderId); // Delete order from DB
+
       setState(() {
-        tabs.removeAt(index);
-        _initializeTabController();
-        if (newIndex >= tabs.length) {
-          newIndex = tabs.length - 1;
+        tabs.removeAt(index); // Remove tab from the UI
+
+        // Update subtitles to maintain order
+        for (int i = 0; i < tabs.length; i++) {
+          tabs[i]["subtitle"] = "Tab ${i + 1}";
         }
-        _tabController!.index = newIndex;
       });
+
+      _initializeTabController(); // Reinitialize tabs
+
+      if (tabs.isNotEmpty) {
+        if (isRemovedTabActive) {
+          // If the removed tab was active, switch to another tab
+          int newIndex = index >= tabs.length ? tabs.length - 1 : index;
+          _tabController!.index = newIndex;
+          int newActiveOrderId = tabs[newIndex]["orderId"] as int;
+          await orderHelper.setActiveOrder(newActiveOrderId);
+        } else {
+          // Keep the currently active tab
+          int currentActiveIndex = tabs.indexWhere((tab) => tab["orderId"] == orderHelper.activeOrderId);
+          if (currentActiveIndex != -1) {
+            _tabController!.index = currentActiveIndex;
+          }
+        }
+
+        fetchOrderItems(); // Refresh order items list
+      } else {
+        // No orders left, reset active order and clear UI
+        orderHelper.activeOrderId = null;
+        setState(() {
+          orderItems = []; // Clear order items
+        });
+      }
+    }
+  }
+
+  // Build #1.0.10: Deletes an item from the active order
+  void deleteItemFromOrder(int itemId) async {
+    if (orderHelper.activeOrderId != null) {
+      await DBHelper.instance.deleteItem(itemId); // Delete item from DB
+      fetchOrderItems(); // Refresh the order items list
     }
   }
 
@@ -131,7 +230,7 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                       scrollDirection: Axis.horizontal,
                       controller: _scrollController,
                       child: Row(
-                        children: List.generate(tabs.length, (index) { //Build #1.0.4 : removed re-order for tabs
+                        children: List.generate(tabs.length, (index) {
                           final bool isSelected = _tabController!.index == index;
                           return Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
@@ -154,21 +253,21 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          tabs[index]["title"]!,
+                                          tabs[index]["title"] as String,
                                           style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                                         ),
                                         Text(
-                                          tabs[index]["subtitle"]!,
+                                          tabs[index]["subtitle"] as String,
                                           style: const TextStyle(color: Colors.black54, fontSize: 12),
                                         ),
                                       ],
                                     ),
                                     const SizedBox(width: 40),
-                                    if (tabs.length > 1)
-                                      GestureDetector(
-                                        onTap: () => removeTab(index),
-                                        child: const Icon(Icons.close, size: 18, color: Colors.red),
-                                      ),
+                                    // Always show the close button
+                                    GestureDetector(
+                                      onTap: () => removeTab(index),
+                                      child: const Icon(Icons.close, size: 18, color: Colors.red),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -266,11 +365,12 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                       motion: const DrawerMotion(),
                       children: [
                         CustomSlidableAction(
-                          onPressed: (context) {
+                          onPressed: (context) async {
                             if (kDebugMode) {
                               print("Deleting item at index $index");
                             } // Debug print
-                            _deleteOrderItem(index); // Call the delete method
+                            deleteItemFromOrder(orderItem[AppDBConst.itemId]);
+                            fetchOrderItems();
                           },
                           backgroundColor: Colors.transparent, // No background color
                           child: Column(
@@ -288,9 +388,8 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                       onTap: () {
                         showNumPadDialog(context, orderItem[AppDBConst.itemName], (selectedQuantity) {
                           setState(() {
-                            orderItem[AppDBConst.itemQuantity] = selectedQuantity;
+                            orderItem[AppDBConst.itemCount] = selectedQuantity;
                           });
-                          DBHelper.instance.updateOrderItem(orderItem[AppDBConst.orderId], orderItem[AppDBConst.itemId], orderItem[AppDBConst.itemQuantity]);
                         });
                       },
                       child: Container(
@@ -338,7 +437,7 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  "\$${(orderItem[AppDBConst.itemQuantity] * orderItem[AppDBConst.itemPrice]).toStringAsFixed(2)}",
+                                  "\$${(orderItem[AppDBConst.itemCount] * orderItem[AppDBConst.itemPrice]).toStringAsFixed(2)}",
                                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                                 ),
                               ],
@@ -467,18 +566,6 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
         )
       ],
     );
-  }
-  /// Delete an Item from the List
-  Future<void> _deleteOrderItem(int index) async {
-    final orderId = orderItems[index][AppDBConst.orderId];
-
-    // Delete from the database
-    await DBHelper.instance.deleteItem(orderId);
-
-    // Update the UI
-    setState(() {
-      orderItems.removeAt(index); // Remove from the mutable list
-    });
   }
 
   /// //Build #1.0.2 : Added showNumPadDialog if user tap on order layout list item
