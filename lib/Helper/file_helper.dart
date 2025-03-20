@@ -4,6 +4,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../Constants/text.dart';
+import '../Models/Auth/login_model.dart';
+
 
 String appDocDirPath = "";
 
@@ -136,6 +139,20 @@ class FileHelper {
 
   static Future<String?> readToken() async {
 
+  }
+
+  static Future<LoginResponse?> readLoginResponse() async { // Build #1.0.11: Added for User Id from login response
+    try {
+      FileHelper fileHelper = FileHelper(
+          "${TextConstants.login}${TextConstants.jsonfileExtension}");
+      dynamic contents = await fileHelper.readJSONFileData();
+      return LoginResponse.fromJson(contents);
+    } catch (e) {
+      if (kDebugMode) {
+        print("Exception in FileHelper.readLoginResponse: $e");
+      }
+      return null;
+    }
   }
 
 }

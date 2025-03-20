@@ -1,189 +1,22 @@
-// import 'package:flutter/foundation.dart';
-// import 'package:flutter/material.dart';
-// import 'package:flutter_svg/flutter_svg.dart';
-// import '../Models/FastKey/category_model.dart';
-//
-// class CategoryList extends StatefulWidget {
-//   const CategoryList({super.key});
-//
-//   @override
-//   _CategoryListState createState() => _CategoryListState();
-// }
-//
-// class _CategoryListState extends State<CategoryList> {
-//   // Scroll controller to manage horizontal scrolling
-//   final ScrollController _scrollController = ScrollController();
-//   // Flags to show left and right scroll arrows
-//   bool _showLeftArrow = false;
-//   bool _showRightArrow = true;
-//   // Track selected item index
-//   int _selectedIndex = -1;
-//
-//   // Ex: List of category data
-//   final List<CategoryModel> categories = [
-//     CategoryModel(name: 'Pickles1', itemCount: '30 Items', imageAsset: 'assets/svg/password_placeholder.svg'),
-//     CategoryModel(name: 'Alcohol2', itemCount: '30 Items', imageAsset: 'assets/svg/password_placeholder.svg'),
-//     CategoryModel(name: 'Juice3', itemCount: '30 Items', imageAsset: 'assets/svg/password_placeholder.svg'),
-//     CategoryModel(name: 'Drinks4', itemCount: '30 Items', imageAsset: 'assets/svg/password_placeholder.svg'),
-//     CategoryModel(name: 'Bread5', itemCount: '30 Items', imageAsset: 'assets/svg/password_placeholder.svg'),
-//     CategoryModel(name: 'Coffee6', itemCount: '30 Items', imageAsset: 'assets/svg/password_placeholder.svg'),
-//     CategoryModel(name: 'Category7', itemCount: '30 Items', imageAsset: 'assets/svg/password_placeholder.svg'),
-//     CategoryModel(name: 'Pickles1', itemCount: '30 Items', imageAsset: 'assets/svg/password_placeholder.svg'),
-//     CategoryModel(name: 'Alcohol2', itemCount: '30 Items', imageAsset: 'assets/svg/password_placeholder.svg'),
-//     CategoryModel(name: 'Juice3', itemCount: '30 Items', imageAsset: 'assets/svg/password_placeholder.svg'),
-//     CategoryModel(name: 'Drinks4', itemCount: '30 Items', imageAsset: 'assets/svg/password_placeholder.svg'),
-//     CategoryModel(name: 'Bread5', itemCount: '30 Items', imageAsset: 'assets/svg/password_placeholder.svg'),
-//     CategoryModel(name: 'Coffee6', itemCount: '30 Items', imageAsset: 'assets/svg/password_placeholder.svg'),
-//     CategoryModel(name: 'Category7', itemCount: '30 Items', imageAsset: 'assets/svg/password_placeholder.svg'),
-//   ];
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     // Add listener to scroll controller for dynamic arrow visibility
-//     _scrollController.addListener(() {
-//       setState(() {
-//         // Show the left arrow if scrolling has occurred to the left
-//         _showLeftArrow = _scrollController.offset > 0;
-//         // Show the right arrow if we haven't reached the end of the list
-//         _showRightArrow = _scrollController.offset < _scrollController.position.maxScrollExtent;
-//       });
-//     });
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     var size = MediaQuery.of(context).size; // Get screen size
-//     return Padding(
-//       padding: const EdgeInsets.all(8.0),
-//       child: Row(
-//         children: [
-//           // Show left scroll button if needed
-//           if (_showLeftArrow)
-//             _buildScrollButton(Icons.arrow_back_ios, () {
-//               // Scroll left
-//               _scrollController.animateTo(
-//                 _scrollController.offset - size.width,
-//                 duration: const Duration(milliseconds: 300),
-//                 curve: Curves.easeInOut,
-//               );
-//             }),
-//           Expanded(
-//             child: Container(
-//               height: 110, // Set height of the category list
-//               child: ListView.builder(
-//                 controller: _scrollController, // Set scroll controller
-//                 scrollDirection: Axis.horizontal, // Horizontal scrolling
-//                 itemCount: categories.length, // Number of categories
-//                 itemBuilder: (context, index) {
-//                   final category = categories[index];
-//                   bool isSelected = _selectedIndex == index; // Check if item is selected
-//
-//                   return GestureDetector(
-//                     onTap: () {
-//                       setState(() {
-//                         _selectedIndex = isSelected ? -1 : index; // Toggle selection
-//                       });
-//                       // Print selected category for debugging
-//                       if (kDebugMode) {
-//                         print('Selected Category: ${category.name}');
-//                       }
-//                     },
-//                     child: Padding(
-//                       padding: const EdgeInsets.symmetric(horizontal: 5.0),
-//                       child: Container(
-//                         padding: const EdgeInsets.all(10),
-//                         decoration: BoxDecoration(
-//                           color: isSelected ? Colors.red : Colors.white, // Change color when selected
-//                           borderRadius: BorderRadius.circular(12),
-//                           border: Border.all(color: Colors.black12),
-//                         ),
-//                         child: Column(
-//                           mainAxisAlignment: MainAxisAlignment.center,
-//                           children: [
-//                             // Display category image
-//                             SvgPicture.asset(
-//                               category.imageAsset,
-//                               height: 40,
-//                               width: 40,
-//                             ),
-//                             const SizedBox(height: 8),
-//                             // Display category name
-//                             Text(
-//                               category.name,
-//                               style: TextStyle(
-//                                 fontWeight: FontWeight.bold,
-//                                 color: isSelected ? Colors.white : Colors.black,
-//                               ),
-//                             ),
-//                             // Display item count
-//                             Text(
-//                               category.itemCount,
-//                               style: TextStyle(
-//                                 color: isSelected ? Colors.white : Colors.grey,
-//                               ),
-//                             ),
-//                           ],
-//                         ),
-//                       ),
-//                     ),
-//                   );
-//                 },
-//               ),
-//             ),
-//           ),
-//           // Show right scroll button if needed
-//           if (_showRightArrow)
-//             _buildScrollButton(Icons.arrow_forward_ios, () {
-//               // Scroll right
-//               _scrollController.animateTo(
-//                 _scrollController.offset + size.width,
-//                 duration: const Duration(milliseconds: 300),
-//                 curve: Curves.easeInOut,
-//               );
-//             }),
-//
-//            const SizedBox(width: 8),
-//
-//           _buildScrollButton(Icons.add, (){ //Build #1.0.2 : changed add (+) button to arrow right side in tab section
-//
-//           }),
-//         ],
-//       ),
-//     );
-//   }
-//
-//   // Helper method to build scroll buttons (left and right)
-//   Widget _buildScrollButton(IconData icon, VoidCallback onPressed) {
-//     return Container(
-//       height: 110, // Set height of scroll button
-//       padding: const EdgeInsets.all(1),
-//       decoration: BoxDecoration(
-//         border: Border.all(color: Colors.black12),
-//         color: Colors.white,
-//         borderRadius: BorderRadius.circular(12),
-//       ),
-//       child: IconButton(
-//         icon: Icon(icon, color: Colors.redAccent),
-//         onPressed: onPressed, // Trigger scroll action when pressed
-//       ),
-//     );
-//   }
-// }
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../Constants/text.dart';
+import '../Database/db_helper.dart';
+import '../Database/fast_key_db_helper.dart';
+import '../Helper/file_helper.dart';
+import '../Models/Auth/login_model.dart';
 import '../Models/FastKey/category_model.dart';
 import '../Utilities/shimmer_effect.dart';
 
 class CategoryList extends StatefulWidget {
   final bool isHorizontal; // Build #1.0.6
   final bool isLoading; // Add a loading state
+  final ValueNotifier<int?> fastKeyTabIdNotifier; // Add this
 
-  const CategoryList({super.key, required this.isHorizontal, this.isLoading = false});
+  const CategoryList({super.key, required this.isHorizontal, this.isLoading = false, required this.fastKeyTabIdNotifier});
 
   @override
   _CategoryListState createState() => _CategoryListState();
@@ -195,53 +28,132 @@ class _CategoryListState extends State<CategoryList> {
   // Flags to show left and right scroll arrows
   bool _showLeftArrow = false;
   bool _showRightArrow = true;
-  int? _selectedIndex = 0; // Changed to nullable for better handling
+  int? _selectedIndex; // Changed to nullable for better handling
   int? _editingIndex; // Track the item being reordered or edited
+  int? userId;
 
-  // Ex: List of category data
-  final List<CategoryModel> categories = [
-    CategoryModel(
-        name: 'Pickles1',
-        itemCount: '30 Items',
-        imageAsset: 'assets/svg/password_placeholder.svg'),
-    CategoryModel(
-        name: 'Alcohol2',
-        itemCount: '30 Items',
-        imageAsset: 'assets/svg/password_placeholder.svg'),
-    CategoryModel(
-        name: 'Juice3',
-        itemCount: '30 Items',
-        imageAsset: 'assets/svg/password_placeholder.svg'),
-    CategoryModel(
-        name: 'Drinks4',
-        itemCount: '30 Items',
-        imageAsset: 'assets/svg/password_placeholder.svg'),
-    CategoryModel(
-        name: 'Bread5',
-        itemCount: '30 Items',
-        imageAsset: 'assets/svg/password_placeholder.svg'),
-    CategoryModel(
-        name: 'Coffee6',
-        itemCount: '30 Items',
-        imageAsset: 'assets/svg/password_placeholder.svg'),
-    CategoryModel(
-        name: 'Category7',
-        itemCount: '30 Items',
-        imageAsset: 'assets/svg/password_placeholder.svg'),
-  ];
+  // FastKey helper instance
+  final FastKeyHelper fastKeyHelper = FastKeyHelper();
+  // List of FastKey products fetched from the database
+  List<CategoryModel> fastKeyProducts = [];
 
   @override
   void initState() {
     super.initState();
-    // Add listener to scroll controller for dynamic arrow visibility
     _scrollController.addListener(() {
       setState(() {
-        // Show the left arrow if scrolling has occurred to the left
         _showLeftArrow = _scrollController.offset > 0;
-        // Show the right arrow if we haven't reached the end of the list
         _showRightArrow = _scrollController.offset < _scrollController.position.maxScrollExtent;
       });
     });
+
+    getUserId();
+    widget.fastKeyTabIdNotifier.addListener(_onTabChanged); // Listen to tab changes
+  }
+
+  void _onTabChanged() { // Build #1.0.11
+    setState(() async {
+      // Rebuild the list when the tab changes
+      await _loadFastKeysTabs(); // Wait for tabs to load
+    });
+  }
+
+  Future<void> _loadLastSelectedTab() async { // Build #1.0.11
+    final lastSelectedTabId = await fastKeyHelper.getActiveFastKeyTab();
+    if (kDebugMode) {
+      print("#### fastKeyHelper.getFastKeyTabFromPref: $lastSelectedTabId");
+    }
+    if (lastSelectedTabId != null) {
+      setState(() {
+        _selectedIndex = fastKeyProducts.indexWhere((tab) => tab.id == lastSelectedTabId);
+      });
+    }
+
+    if (kDebugMode) {
+      print("#### _selectedIndex: $_selectedIndex");
+    }
+  }
+
+  Future<void> getUserId() async { // Build #1.0.11
+    try {
+      final LoginResponse? response = await FileHelper.readLoginResponse();
+
+      if (response != null) {
+        userId = response.id; // Assuming `id` is a property in `LoginResponse`
+
+        if (kDebugMode) {
+          print("#### userId: $userId");
+        }
+
+        // Load FastKey tabs from the database
+        await _loadFastKeysTabs(); // Wait for tabs to load
+        await _loadLastSelectedTab(); // Now load the last selected tab
+      } else {
+        if (kDebugMode) {
+          print("No user ID found in login response.");
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Exception in getUserId: $e");
+      }
+    }
+  }
+
+  // Add a method to check if content overflows
+  bool _doesContentOverflow() { // Build #1.0.11
+    final screenWidth = MediaQuery.of(context).size.width;
+    final contentWidth = fastKeyProducts.length * 120; // Adjust based on item width
+    return contentWidth > screenWidth;
+  }
+
+  Future<void> _loadFastKeysTabs() async { // Build #1.0.11
+    final fastKeyTabs = await fastKeyHelper.getFastKeyTabsByUserId(userId ?? 1);
+    if (kDebugMode) {
+      print("#### fastKeyTabs : $fastKeyTabs");
+    }
+    // Convert the list of maps to a list of CategoryModel
+    setState(() {
+      fastKeyProducts = fastKeyTabs.map((product) {
+        return CategoryModel(
+          name: product[AppDBConst.fastKeyTabTitle],
+          itemCount: product[AppDBConst.fastKeyTabCount].toString(),
+          imageAsset: product[AppDBConst.fastKeyTabImage],
+          id: product[AppDBConst.fastKeyId],
+        );
+      }).toList();
+    });
+  }
+
+  Future<void> _addFastKeyTab(String title, String image) async { // Build #1.0.11
+    final newTabId = await fastKeyHelper.addFastKeyTab(userId ?? 1, title, image, 0);
+
+    // Add the new tab to the local list
+    setState(() {
+      fastKeyProducts.add(CategoryModel(
+        name: title,
+        itemCount: "0",
+        imageAsset: image,
+        id: newTabId,
+      ));
+      _selectedIndex = fastKeyProducts.length - 1; // Set the selected index to the new tab
+    });
+
+    // Save the selected tab ID
+    await fastKeyHelper.saveActiveFastKeyTab(newTabId);
+    widget.fastKeyTabIdNotifier.value = newTabId; // Notify NestedGridWidget
+  }
+
+  Future<void> _deleteFastKeyTab(int fastKeyProductId) async {
+    await fastKeyHelper.deleteFastKeyTab(fastKeyProductId);
+
+    // Remove the tab from the local list
+    setState(() {
+      fastKeyProducts.removeWhere((tab) => tab.id == fastKeyProductId);
+    });
+
+    // Update the item count in the FastKey tab
+    await fastKeyHelper.updateFastKeyTabCount(fastKeyProductId, fastKeyProducts.length);
   }
 
   @override
@@ -258,6 +170,26 @@ class _CategoryListState extends State<CategoryList> {
     );
   }
 
+  Widget _buildImage(String imagePath) { // Build #1.0.11 :  load image
+    if (imagePath.startsWith('assets/')) {
+      return SvgPicture.asset(
+        imagePath,
+        height: 40,
+        width: 40,
+        placeholderBuilder: (context) => Icon(Icons.image, size: 40),
+      );
+    } else {
+      return Image.file(
+        File(imagePath),
+        height: 40,
+        width: 40,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Icon(Icons.image, size: 40);
+        },
+      );
+    }
+  }
 
   Widget _buildHorizontalList() {
     var size = MediaQuery.of(context).size; // Get screen size
@@ -269,12 +201,12 @@ class _CategoryListState extends State<CategoryList> {
       },
       child: Row(
         children: [
-          AnimatedSwitcher( // Build #1.0.7: animation code from surya
+          AnimatedSwitcher(
             duration: Duration(milliseconds: 1000),
             transitionBuilder: (widget, animation) {
               return FadeTransition(opacity: animation, child: widget);
             },
-            child: _showLeftArrow
+            child: _showLeftArrow && _doesContentOverflow()
                 ? _buildScrollButton(Icons.arrow_back_ios, () {
               _scrollController.animateTo(
                 _scrollController.offset - size.width,
@@ -298,8 +230,8 @@ class _CategoryListState extends State<CategoryList> {
                   if (newIndex > oldIndex) newIndex--;
 
                   setState(() {
-                    final item = categories.removeAt(oldIndex);
-                    categories.insert(newIndex, item);
+                    final item = fastKeyProducts.removeAt(oldIndex);
+                    fastKeyProducts.insert(newIndex, item);
 
                     // Keep edit mode after reordering
                     _editingIndex = newIndex;
@@ -322,31 +254,31 @@ class _CategoryListState extends State<CategoryList> {
                     child: child,
                   );
                 },
-                children: List.generate(categories.length, (index) {
-                  final category = categories[index];
+                children: List.generate(fastKeyProducts.length, (index) {
+                  final product = fastKeyProducts[index];
                   bool isSelected = _selectedIndex == index;
                   bool showEditButton = _editingIndex == index;
 
                   return GestureDetector(
-                    key: ValueKey(category.name),
-                    onTap: () {
+                    key: ValueKey(product.name),
+                    onTap: () async {
                       setState(() {
                         if (_editingIndex == index) {
-                          //Build #1.0.7: If item is in edit mode, just dismiss edit mode
                           _editingIndex = null;
                         } else if (_selectedIndex == index) {
-                          //Build #1.0.7: If item is already selected, do nothing (keep selection)
                           return;
                         } else {
-                          //Build #1.0.7: If item is not selected, select it
                           _selectedIndex = index;
                           _editingIndex = null;
                         }
                       });
+                      // Save the selected tab ID
+                      await fastKeyHelper.saveActiveFastKeyTab(product.id);
                     },
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 5.0),
                       child: AnimatedContainer(
+                        width: 90, // Fixed width for each item
                         duration: const Duration(milliseconds: 300),
                         padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
                         decoration: BoxDecoration(
@@ -358,6 +290,7 @@ class _CategoryListState extends State<CategoryList> {
                           ),
                         ),
                         child: Stack(
+                          alignment: Alignment.center,
                           children: [
                             Positioned(
                               top: 0,
@@ -381,17 +314,17 @@ class _CategoryListState extends State<CategoryList> {
                             Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                SvgPicture.asset(category.imageAsset, height: 40, width: 40),
+                                _buildImage(product.imageAsset),
                                 const SizedBox(height: 8),
                                 Text(
-                                  category.name,
+                                  product.name,
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: isSelected ? Colors.white : Colors.black,
                                   ),
                                 ),
                                 Text(
-                                  category.itemCount,
+                                  product.itemCount,
                                   style: TextStyle(
                                     color: isSelected ? Colors.white : Colors.grey,
                                   ),
@@ -412,9 +345,9 @@ class _CategoryListState extends State<CategoryList> {
             transitionBuilder: (widget, animation) {
               return FadeTransition(opacity: animation, child: widget);
             },
-            child: _showRightArrow
+            child: _showLeftArrow && _doesContentOverflow()
                 ? _buildScrollButton(Icons.arrow_forward_ios, () {
-                _scrollController.animateTo(
+              _scrollController.animateTo(
                 _scrollController.offset + size.width,
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
@@ -430,10 +363,6 @@ class _CategoryListState extends State<CategoryList> {
     );
   }
 
-  ////Build #1.0.7: Dismissal on edit -> Done
-  // 1. On tap of self tab or other tab or outer area
-  // 2. Selected color for the tab should not disappear
-  // 3. Add the padding and margin for the inside data to card
   Widget _buildVerticalList() {
     return GestureDetector(
       onTap: () {
@@ -457,8 +386,8 @@ class _CategoryListState extends State<CategoryList> {
                 if (newIndex > oldIndex) newIndex--;
 
                 setState(() {
-                  final item = categories.removeAt(oldIndex);
-                  categories.insert(newIndex, item);
+                  final item = fastKeyProducts.removeAt(oldIndex);
+                  fastKeyProducts.insert(newIndex, item);
 
                   // Keep edit mode after reordering
                   _editingIndex = newIndex;
@@ -481,14 +410,14 @@ class _CategoryListState extends State<CategoryList> {
                   child: child,
                 );
               },
-              children: List.generate(categories.length, (index) {
-                final category = categories[index];
+              children: List.generate(fastKeyProducts.length, (index) {
+                final product = fastKeyProducts[index];
                 bool isSelected = _selectedIndex == index;
                 bool showEditButton = _editingIndex == index;
 
                 return GestureDetector(
-                  key: ValueKey(category.name),
-                  onTap: () {
+                  key: ValueKey(product.name),
+                  onTap: () async {
                     setState(() {
                       if (_editingIndex == index) {
                         // If item is in edit mode, just dismiss edit mode
@@ -502,10 +431,13 @@ class _CategoryListState extends State<CategoryList> {
                         _editingIndex = null;
                       }
                     });
+                    // Save the selected tab ID
+                    await fastKeyHelper.saveActiveFastKeyTab(product.id);
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 5.0),
                     child: AnimatedContainer(
+                      width: 120, // Fixed width for each item
                       duration: const Duration(milliseconds: 300),
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -539,24 +471,20 @@ class _CategoryListState extends State<CategoryList> {
                           ),
                           Row(
                             children: [
-                              SvgPicture.asset(
-                                category.imageAsset,
-                                height: 30,
-                                width: 30,
-                              ),
+                              _buildImage(product.imageAsset),
                               const SizedBox(width: 8),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    category.name,
+                                    product.name,
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: isSelected ? Colors.white : Colors.black,
                                     ),
                                   ),
                                   Text(
-                                    category.itemCount,
+                                    product.itemCount,
                                     style: TextStyle(
                                       color: isSelected ? Colors.white : Colors.grey,
                                     ),
@@ -611,11 +539,11 @@ class _CategoryListState extends State<CategoryList> {
     );
   }
 
-  void _showCategoryDialog({int? index}) { //Build #1.0.4
+  void _showCategoryDialog({int? index}) {
     bool isEditing = index != null;
     TextEditingController nameController =
-    TextEditingController(text: isEditing ? categories[index].name : '');
-    String imagePath = isEditing ? categories[index].imageAsset : '';
+    TextEditingController(text: isEditing ? fastKeyProducts[index].name : '');
+    String imagePath = isEditing ? fastKeyProducts[index].imageAsset : 'assets/svg/password_placeholder.svg'; // Default image path
     bool showError = false;
 
     showDialog(
@@ -638,14 +566,29 @@ class _CategoryListState extends State<CategoryList> {
                           children: [
                             imagePath.isNotEmpty
                                 ? (imagePath.startsWith('assets/')
-                                ? SvgPicture.asset(imagePath,
-                                height: 80, width: 80)
-                                : Image.file(File(imagePath),
-                                height: 80, width: 80))
-                                : Container(
+                                ? SvgPicture.asset(
+                              imagePath,
                               height: 80,
                               width: 80,
-                              color: Colors.grey.shade200,
+                              placeholderBuilder: (context) => Icon(Icons.image, size: 40),
+                            )
+                                : Image.file(
+                              File(imagePath),
+                              height: 80,
+                              width: 80,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return SvgPicture.asset(
+                                  'assets/password_placeholder.svg', // Fallback to default SVG
+                                  height: 80,
+                                  width: 80,
+                                );
+                              },
+                            ))
+                                : SvgPicture.asset(
+                              'assets/password_placeholder.svg', // Default image
+                              height: 80,
+                              width: 80,
                             ),
                             Positioned(
                               right: 0,
@@ -672,24 +615,19 @@ class _CategoryListState extends State<CategoryList> {
                           padding: EdgeInsets.only(top: 8.0),
                           child: Text(
                             TextConstants.imgRequiredText,
-                            style:
-                            TextStyle(color: Colors.red, fontSize: 12),
+                            style: TextStyle(color: Colors.red, fontSize: 12),
                           ),
                         ),
                       TextField(
                         controller: nameController,
                         decoration: InputDecoration(
                           labelText: TextConstants.nameText,
-                          errorText: (!isEditing &&
-                              showError &&
-                              nameController.text.isEmpty)
+                          errorText: (!isEditing && showError && nameController.text.isEmpty)
                               ? TextConstants.nameReqText
                               : null,
-                          errorStyle: const TextStyle(
-                              color: Colors.red, fontSize: 12),
+                          errorStyle: const TextStyle(color: Colors.red, fontSize: 12),
                           suffixIcon: isEditing
-                              ? const Icon(Icons.edit,
-                              size: 18, color: Colors.red)
+                              ? const Icon(Icons.edit, size: 18, color: Colors.red)
                               : null,
                         ),
                       ),
@@ -697,7 +635,7 @@ class _CategoryListState extends State<CategoryList> {
                         Padding(
                           padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
-                            '${TextConstants.itemCountText} ${categories[index].itemCount}',
+                            '${TextConstants.itemCountText} ${fastKeyProducts[index].itemCount}',
                             style: const TextStyle(color: Colors.grey),
                           ),
                         ),
@@ -707,30 +645,38 @@ class _CategoryListState extends State<CategoryList> {
               ),
               actions: [
                 TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(TextConstants.cancelText)),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(TextConstants.cancelText),
+                ),
                 TextButton(
-                  onPressed: () {
-                    if (!isEditing &&
-                        (nameController.text.isEmpty || imagePath.isEmpty)) {
+                  onPressed: () async {
+                    if (!isEditing && nameController.text.isEmpty) {
                       setStateDialog(() {
                         showError = true;
                       });
                       return;
                     }
-                    setState(() {
-                      if (isEditing) {
-                        categories[index].name = nameController.text;
-                        categories[index].imageAsset = imagePath;
-                      } else {
-                        categories.add(CategoryModel(
-                            name: nameController.text,
-                            itemCount: '0',
-                            imageAsset: imagePath.isNotEmpty
-                                ? imagePath
-                                : 'assets/default.svg'));
-                      }
-                    });
+
+                    if (isEditing) {
+                      // Update existing FastKey tab in the database
+                      final updatedTab = {
+                        AppDBConst.fastKeyTabTitle: nameController.text,
+                        AppDBConst.fastKeyTabImage: imagePath,
+                      };
+                      await fastKeyHelper.updateFastKeyTab(fastKeyProducts[index].id, updatedTab);
+
+                      // Update the local list
+                      setState(() {
+                        _editingIndex = null;
+                        fastKeyProducts[index].name = nameController.text;
+                        fastKeyProducts[index].imageAsset = imagePath;
+                      });
+                    } else {
+                      // Add new FastKey tab to the database
+                      await _addFastKeyTab(nameController.text, imagePath);
+                    }
+
+                    // Close the dialog
                     Navigator.pop(context);
                   },
                   child: const Text(TextConstants.saveText),
@@ -738,8 +684,7 @@ class _CategoryListState extends State<CategoryList> {
                 if (isEditing)
                   TextButton(
                     onPressed: () => _showDeleteConfirmationDialog(index!),
-                    child: const Text(TextConstants.deleteText,
-                        style: TextStyle(color: Colors.red)),
+                    child: const Text(TextConstants.deleteText, style: TextStyle(color: Colors.red)),
                   ),
               ],
             );
@@ -756,24 +701,56 @@ class _CategoryListState extends State<CategoryList> {
       builder: (context) {
         return AlertDialog(
           title: const Text(TextConstants.deleteTabText),
-          content:
-          const Text(TextConstants.deleteConfirmText),
+          content: const Text(TextConstants.deleteConfirmText),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context), // Cancel
               child: const Text(TextConstants.noText),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async { // Build #1.0.11
+                // Store the ID of the currently selected tab
+                final selectedTabId = _selectedIndex != null ? fastKeyProducts[_selectedIndex!].id : null;
+
+                // Delete the tab from the database
+                await _deleteFastKeyTab(fastKeyProducts[index].id);
+
+                // Reset the editing index
                 setState(() {
-                  categories.removeAt(index);
-                  if (_selectedIndex == index) _selectedIndex = null;
+                  _editingIndex = null;
                 });
+
+                // Update the selected index based on the visual order
+                if (_selectedIndex != null) {
+                  if (_selectedIndex == index) {
+                    // If the deleted tab was the selected one, select the next tab
+                    if (fastKeyProducts.isNotEmpty) {
+                      if (index < fastKeyProducts.length) {
+                        _selectedIndex = index; // Select the next tab
+                      } else {
+                        _selectedIndex = fastKeyProducts.length - 1; // Select the last tab if the deleted tab was the last one
+                      }
+                    } else {
+                      _selectedIndex = null; // No tabs left
+                    }
+                  } else if (_selectedIndex! > index) {
+                    // If the deleted tab was before the selected one, adjust the selected index
+                    _selectedIndex = _selectedIndex! - 1;
+                  }
+                }
+
+                // Save the new selected tab ID
+                if (_selectedIndex != null) {
+                  await fastKeyHelper.saveActiveFastKeyTab(fastKeyProducts[_selectedIndex!].id);
+                } else {
+                  await fastKeyHelper.saveActiveFastKeyTab(-1); // No tab selected
+                }
+
+                // Close the dialogs
                 Navigator.pop(context); // Close confirmation dialog
                 Navigator.pop(context); // Close edit dialog
               },
-              child:
-              const Text(TextConstants.yesText, style: TextStyle(color: Colors.red)),
+              child: const Text(TextConstants.yesText, style: TextStyle(color: Colors.red)),
             ),
           ],
         );

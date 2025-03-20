@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io';
@@ -7,22 +8,29 @@ import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 
 import '../Constants/text.dart';
 import '../Database/db_helper.dart';
-import '../Database/order_helper.dart';
+import '../Database/fast_key_db_helper.dart';
+import '../Database/order_panel_db_helper.dart';
 import '../Utilities/shimmer_effect.dart';
 
 class NestedGridWidget extends StatefulWidget {
   final bool isHorizontal;
-  final bool isLoading; // Add a loading state
-  final VoidCallback? onItemAdded; // Make it optional (nullable) // Callback to notify when an item is added
+  final bool isLoading;
+  final VoidCallback? onItemAdded;
+  final ValueNotifier<int?> fastKeyTabIdNotifier;
 
-  const NestedGridWidget({super.key, required this.isHorizontal, this.isLoading = false, this.onItemAdded});
+  const NestedGridWidget({
+    super.key,
+    required this.isHorizontal,
+    this.isLoading = false,
+    this.onItemAdded,
+    required this.fastKeyTabIdNotifier,
+  });
 
   @override
   _NestedGridWidgetState createState() => _NestedGridWidgetState();
 }
 
 class _NestedGridWidgetState extends State<NestedGridWidget> {
-  // Nested items with different icons and titles
   List<List<Map<String, dynamic>>> nestedItems = [
     [
       {"id": 101, "title": "Apple", "icon": Icons.apple, "price": "\$0.99", "image": "https://via.placeholder.com/50"},
@@ -39,18 +47,97 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
   int currentLevel = 0;
   List<String> navigationPath = ["Home"];
   bool isLoading = false;
-  List<int?> reorderedIndices = []; // Track reordered indices for each nested list
+  List<int?> reorderedIndices = [];
   int? selectedItemIndex;
+  int? _fastKeyTabId;
 
   File? _pickedImage;
   final ImagePicker _picker = ImagePicker();
   final OrderHelper orderHelper = OrderHelper();
+  final FastKeyHelper fastKeyHelper = FastKeyHelper();
+  final DBHelper dbHelper = DBHelper.instance;
+
+  List<Map<String, dynamic>> fastKeyProductItems = [];
+  final TextEditingController searchController = TextEditingController();
+  List<Map<String, dynamic>> searchResults = [];
+  Map<String, dynamic>? selectedProduct;
 
   @override
   void initState() {
     super.initState();
-    // Initialize reorderedIndices for each nested list
-    reorderedIndices = List.filled(nestedItems.length, null);
+    reorderedIndices = List.filled(fastKeyProductItems.length, null);
+    _loadActiveFastKeyTabId();
+    widget.fastKeyTabIdNotifier.addListener(_onTabChanged);
+  }
+
+  void _onTabChanged() { // Build #1.0.11
+    setState(() {
+      _fastKeyTabId = widget.fastKeyTabIdNotifier.value;
+    });
+    fastKeyHelper.saveActiveFastKeyTab(_fastKeyTabId); // Save the active tab ID
+    _loadFastKeyTabItems(); // Reload items when the tab changes
+  }
+
+  @override
+  void dispose() {
+    widget.fastKeyTabIdNotifier.removeListener(_onTabChanged);
+    super.dispose();
+  }
+
+  Future<void> _loadActiveFastKeyTabId() async { // Build #1.0.11
+    final lastSelectedTabId = await fastKeyHelper.getActiveFastKeyTab();
+    setState(() {
+      _fastKeyTabId = lastSelectedTabId;
+    });
+    if (kDebugMode) {
+      print("_loadActiveFastKeyTabId, _fastKeyTabId: $_fastKeyTabId");
+    }
+    _loadFastKeyTabItems();
+  }
+
+  Future<void> _loadFastKeyTabItems() async { // Build #1.0.11
+    if (_fastKeyTabId == null) return;
+
+    final items = await fastKeyHelper.getFastKeyItems(_fastKeyTabId!);
+    setState(() {
+      fastKeyProductItems = List<Map<String, dynamic>>.from(items);
+      reorderedIndices = List.filled(fastKeyProductItems.length, null); // Resize reorderedIndices
+    });
+  }
+
+  Future<void> _addFastKeyTabItem(String name, String image, double price) async {
+    if (_fastKeyTabId == null) {
+      print("### _fastKeyTabId is null, cannot add item");
+      return;
+    }
+    print("### _addFastKeyTabItem _fastKeyTabId: $_fastKeyTabId");
+
+    await fastKeyHelper.addFastKeyItem(_fastKeyTabId!, name, image, price);
+
+    // Increase count manually before reloading
+    await fastKeyHelper.updateFastKeyTabCount(_fastKeyTabId!, fastKeyProductItems.length + 1);
+
+    await _loadFastKeyTabItems(); // Reload items after adding
+    // Call setState synchronously after all async operations
+    if (mounted) {
+      setState(() {});
+    }
+    widget.fastKeyTabIdNotifier.notifyListeners(); // Notify listeners
+  }
+
+  Future<void> _deleteFastKeyTabItem(int fastKeyTabItemId) async { // Build #1.0.11
+    if (_fastKeyTabId == null) return;
+
+    await fastKeyHelper.deleteFastKeyItem(fastKeyTabItemId);
+    await _loadFastKeyTabItems(); // Reload items after deleting
+    await fastKeyHelper.updateFastKeyTabCount(_fastKeyTabId!, fastKeyProductItems.length);
+
+    // Call setState synchronously after all async operations
+    if (mounted) {
+      setState(() {});
+    }
+
+    widget.fastKeyTabIdNotifier.notifyListeners(); // Notify listeners
   }
 
   Future<void> _pickImage() async {
@@ -63,23 +150,30 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
   }
 
   void _onItemSelected(int index) async {
-    if (currentLevel + 1 < nestedItems.length) {
-      // Navigate to the next level (if it exists)
+    print("Item selected: $index");
+    if (currentLevel + 1 < navigationPath.length) {
       setState(() {
         currentLevel++;
-        navigationPath.add(nestedItems[currentLevel - 1][index]["title"]);
+        navigationPath.add(fastKeyProductItems[index]["fast_key_item_name"]);
       });
     } else {
-      // Add the selected item to the database (only if it's the last level)
-      final selectedProduct = nestedItems[currentLevel][index];
-      await orderHelper.addItemToOrder( // Build #1.0.10 - Naveen
-        selectedProduct["title"],
-        selectedProduct["image"],
-        double.parse(selectedProduct["price"].replaceAll('\$', '')),
+      final selectedProduct = fastKeyProductItems[index];
+      if (kDebugMode) {
+        print("Selected Product: $selectedProduct");
+      }
+
+      await orderHelper.addItemToOrder(
+        selectedProduct["fast_key_item_name"],
+        selectedProduct["fast_key_item_image"],
+        selectedProduct["fast_key_item_price"],
         1,
         'SKU$index',
-        onItemAdded: widget.onItemAdded, // Pass the callback
+        onItemAdded: widget.onItemAdded,
       );
+
+      if (kDebugMode) {
+        print("Item added to order successfully!");
+      }
     }
   }
 
@@ -101,36 +195,32 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
     }
   }
 
-  Future<void> _deleteItem(int listIndex, int itemIndex) async {
-    setState(() {
-      nestedItems[listIndex].removeAt(itemIndex);
-      reorderedIndices[listIndex] = null; // Reset reordered index after deletion
-    });
+  Future<void> _deleteItem(int itemIndex) async {
+    final itemId = fastKeyProductItems[itemIndex]["fast_key_item_id"];
+    await _deleteFastKeyTabItem(itemId);
   }
 
-  Future<void> _showAddItemDialog(int listIndex) async { //Build #1.0.4
-    final TextEditingController searchController = TextEditingController();
-    List<Map<String, dynamic>> searchResults = [];
-    Map<String, dynamic>? selectedProduct;
-
-    Future<void> searchProducts(String query) async {
-      if (query.isEmpty) {
-        setState(() {
-          searchResults.clear();
-        });
-        return;
-      }
-
-      final response = await http.get(Uri.parse('https://your-api-endpoint.com/search?q=$query'));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          searchResults = List<Map<String, dynamic>>.from(data['products']);
-        });
-      } else {
-        throw Exception('Failed to load products');
-      }
+  Future<void> searchProducts(String query, StateSetter setStateDialog) async { // Build #1.0.11
+    if (query.isEmpty) {
+      setStateDialog(() {
+        searchResults.clear();
+      });
+      return;
     }
+
+    setStateDialog(() {
+      searchResults = nestedItems.expand((list) => list).where((item) {
+        return item["title"].toLowerCase().contains(query.toLowerCase());
+      }).toList();
+    });
+
+    print("Search Results: $searchResults");
+  }
+
+  Future<void> _showAddItemDialog(int listIndex) async {
+    searchController.clear(); // Clear the search text
+    selectedProduct = null; // Reset the selected product
+    searchResults.clear(); // Clear previous search results
 
     return showDialog<void>(
       context: context,
@@ -139,42 +229,56 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
           return AlertDialog(
             title: const Text(TextConstants.searchAddItemText),
             content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: searchController,
-                    decoration: const InputDecoration(
-                      labelText: TextConstants.searchItemText,
-                      hintText: TextConstants.typeSearchText,
-                    ),
-                    onChanged: (value) {
-                      searchProducts(value);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  if (searchResults.isNotEmpty)
-                    SizedBox(
-                      height: 200,
-                      child: ListView.builder(
-                        itemCount: searchResults.length,
-                        itemBuilder: (context, index) {
-                          final product = searchResults[index];
-                          return ListTile(
-                            title: Text(product['title']),
-                            subtitle: Text(product['price']),
-                            onTap: () {
-                              setStateDialog(() {
-                                selectedProduct = product;
-                              });
-                            },
-                            selected: selectedProduct == product,
-                            selectedTileColor: Colors.grey[300],
-                          );
-                        },
+              child: SizedBox(
+                width: 300,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: searchController,
+                      decoration: const InputDecoration(
+                        labelText: TextConstants.searchItemText,
+                        hintText: TextConstants.typeSearchText,
                       ),
+                      onChanged: (value) {
+                        searchProducts(value, setStateDialog);
+                      },
                     ),
-                ],
+                    const SizedBox(height: 16),
+                    if (searchResults.isNotEmpty)
+                      SizedBox(
+                        height: 200,
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          physics: BouncingScrollPhysics(),
+                          itemCount: searchResults.length,
+                          itemBuilder: (context, index) {
+                            final product = searchResults[index];
+                            return ListTile(
+                              leading: product['image'] != null
+                                  ? Image.network(
+                                product['image'],
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Icon(Icons.broken_image),
+                              )
+                                  : Icon(Icons.image),
+                              title: Text(product['title']),
+                              subtitle: Text(product['price']),
+                              onTap: () {
+                                setStateDialog(() {
+                                  selectedProduct = product;
+                                });
+                              },
+                              selected: selectedProduct == product,
+                              selectedTileColor: Colors.grey[300],
+                            );
+                          },
+                        ),
+                      )
+                  ],
+                ),
               ),
             ),
             actions: <Widget>[
@@ -185,19 +289,35 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                 child: const Text(TextConstants.cancelText),
               ),
               TextButton(
-                onPressed: selectedProduct != null
-                    ? () {
-                  setState(() {
-                    nestedItems[listIndex].add({
-                      "title": selectedProduct!['title'],
-                      "price": selectedProduct!['price'],
-                      "image": selectedProduct!['image'] ?? "https://via.placeholder.com/50",
-                      "icon": Icons.add,
-                    });
-                  });
+                onPressed: selectedProduct != null ? () async {
+                  print("### onPressed:2 _fastKeyTabId - $_fastKeyTabId");
+                  if (_fastKeyTabId != null) {
+                    await _addFastKeyTabItem(
+                      selectedProduct!['title'],
+                      selectedProduct!['image'],
+                      double.parse(selectedProduct!['price'].replaceAll('\$', '')),
+                    );
+                    print("### onPressed: _fastKeyTabId - $_fastKeyTabId, fastKeyProductItems.length: ${fastKeyProductItems.length}");
+
+                    await fastKeyHelper.updateFastKeyTabCount(_fastKeyTabId!, fastKeyProductItems.length);
+
+                    // Load items first
+                    await _loadFastKeyTabItems();
+
+                    // Call setState synchronously
+                    if (mounted) {
+                      setState(() {});
+                    }
+
+                    widget.fastKeyTabIdNotifier?.notifyListeners();
+                  }
+
+                  if (kDebugMode) {
+                    print("#### _fastKeyTabId: $_fastKeyTabId");
+                  }
+
                   Navigator.of(context).pop();
-                }
-                    : null,
+                } : null,
                 child: const Text(TextConstants.addText),
               ),
             ],
@@ -243,9 +363,8 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final currentList = nestedItems[currentLevel];
-    final totalCount = currentList.length + 1;
-    final theme = Theme.of(context); // Build #1.0.6 - Added theme for grid
+    final totalCount = fastKeyProductItems.length + (_fastKeyTabId != null ? 1 : 0);
+    final theme = Theme.of(context);
 
     return Expanded(
       child: Column(
@@ -258,7 +377,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                   ElevatedButton(
                     onPressed: _onBackPressed,
                     style: ElevatedButton.styleFrom(
-                      side: BorderSide(color: theme.secondaryHeaderColor,),
+                      side: BorderSide(color: theme.secondaryHeaderColor),
                     ),
                     child: Text(TextConstants.backText, style: TextStyle(color: theme.secondaryHeaderColor)),
                   ),
@@ -300,10 +419,10 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
             child: Container(
               color: Colors.transparent,
               child: widget.isLoading
-                  ? ShimmerEffect.rectangular(height: 200) // Shimmer effect for the grid
-                  :  Material(
+                  ? ShimmerEffect.rectangular(height: 200)
+                  : Material(
                 color: Colors.transparent,
-                child: ReorderableGridView.builder( // Build #1.0.6 - Added Re order for grid
+                child: ReorderableGridView.builder(
                   padding: const EdgeInsets.all(16),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
@@ -314,17 +433,26 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                   itemCount: totalCount,
                   onReorder: (oldIndex, newIndex) {
                     if (oldIndex == 0 || newIndex == 0) return;
+
                     final adjustedOldIndex = oldIndex - 1;
                     final adjustedNewIndex = newIndex - 1;
+
+                    if (adjustedOldIndex < 0 || adjustedNewIndex < 0 || adjustedOldIndex >= fastKeyProductItems.length || adjustedNewIndex >= fastKeyProductItems.length) {
+                      return;
+                    }
+
                     setState(() {
-                      final item = currentList.removeAt(adjustedOldIndex);
-                      currentList.insert(adjustedNewIndex, item);
-                      reorderedIndices[currentLevel] = adjustedNewIndex;
-                      selectedItemIndex = adjustedNewIndex; // Set selected item after reorder
+                      fastKeyProductItems = List<Map<String, dynamic>>.from(fastKeyProductItems); // Make mutable
+                      final item = fastKeyProductItems.removeAt(adjustedOldIndex);
+                      fastKeyProductItems.insert(adjustedNewIndex, item);
+
+                      reorderedIndices = List.filled(fastKeyProductItems.length, null);
+                      reorderedIndices[adjustedNewIndex] = adjustedNewIndex;  // Mark as reordered
+                      selectedItemIndex = adjustedNewIndex;
                     });
                   },
                   itemBuilder: (context, index) {
-                    if (index == 0) {
+                    if (_fastKeyTabId != null && index == 0) {
                       return Container(
                         key: const ValueKey('add_button'),
                         child: GestureDetector(
@@ -344,15 +472,19 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                         ),
                       );
                     } else {
-                      final itemIndex = index - 1;
-                      final isReordered = reorderedIndices[currentLevel] == itemIndex;
+                      final itemIndex = _fastKeyTabId != null ? index - 1 : index;
+                      if (itemIndex >= fastKeyProductItems.length) {
+                        return SizedBox.shrink(); // Handle out-of-bounds index
+                      }
+                      final isReordered = reorderedIndices.isNotEmpty && reorderedIndices.contains(itemIndex);
+                      final item = fastKeyProductItems[itemIndex];
                       return AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
                         decoration: BoxDecoration(
                           border: isReordered ? Border.all(color: Colors.blue, width: 3) : null,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        key: ValueKey('grid_item_${currentLevel}_${itemIndex}_${currentList[itemIndex]["title"]}'),
+                        key: ValueKey('grid_item_${currentLevel}_${itemIndex}_${item["fast_key_item_name"]}'),
                         child: Stack(
                           clipBehavior: Clip.none,
                           children: [
@@ -360,10 +492,10 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                               onTap: () {
                                 setState(() {
                                   if (selectedItemIndex == itemIndex) {
-                                    selectedItemIndex = null; // Deselect if tapping the same item
+                                    selectedItemIndex = null;
                                   } else {
                                     selectedItemIndex = itemIndex;
-                                    reorderedIndices[currentLevel] = null; // Hide delete/cancel on selection change
+                                    reorderedIndices = List.filled(fastKeyProductItems.length, null); // Reset reorderedIndices
                                   }
                                   _onItemSelected(itemIndex);
                                 });
@@ -375,7 +507,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                                   padding: const EdgeInsets.all(8.0),
                                   child: Row(
                                     children: [
-                                      Icon(currentList[itemIndex]["icon"], size: 50, color: Colors.blue),
+                                      _buildImage(item["fast_key_item_image"]),
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Column(
@@ -383,7 +515,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                                           mainAxisAlignment: MainAxisAlignment.center,
                                           children: [
                                             Text(
-                                              currentList[itemIndex]["title"],
+                                              item["fast_key_item_name"],
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.bold,
@@ -392,7 +524,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                             Text(
-                                              currentList[itemIndex]["price"],
+                                              '\$${item["fast_key_item_price"]}',
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 color: Colors.black,
@@ -416,7 +548,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                                     IconButton(
                                       icon: const Icon(Icons.delete, color: Colors.red, size: 20),
                                       onPressed: () {
-                                        _deleteItem(currentLevel, itemIndex);
+                                        _deleteItem(itemIndex);
                                       },
                                     ),
                                     const SizedBox(width: 0),
@@ -424,7 +556,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                                       icon: const Icon(Icons.close, color: Colors.grey, size: 20),
                                       onPressed: () {
                                         setState(() {
-                                          reorderedIndices[currentLevel] = null;
+                                          reorderedIndices = List.filled(fastKeyProductItems.length, null); // Reset reorderedIndices
                                         });
                                       },
                                     ),
@@ -445,5 +577,4 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
     );
   }
 }
-
 

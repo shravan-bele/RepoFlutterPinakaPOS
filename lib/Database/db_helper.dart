@@ -1,10 +1,10 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class AppDBConst { // Build #1.0.10 - Naveen: Updated DB tables constants
-  // Database name
-  static const String dbName = 'pinaka.db';
+  static const String dbName = 'pinaka.db'; // Database name
 
   // User Table
   static const String userTable = 'user_table';
@@ -39,12 +39,23 @@ class AppDBConst { // Build #1.0.10 - Naveen: Updated DB tables constants
   static const String itemSumPrice = 'item_sum_price'; // Total price (quantity * price)
   static const String orderIdForeignKey = 'order_id'; // Links to the order this item belongs to
 
-  // FastKey Table
-  static const String fastKeyTable = 'fast_key';
+  // Build #1.0.11 : FastKey Tabs Table Updated
+  static const String fastKeyTable = 'fast_key_tabs';
   static const String fastKeyId = 'fast_key_id';
-  static const String fastKeyName = 'fast_key_name';
-  static const String fastKeyImage = 'fast_key_image';
-  static const String fastKeyItemId = 'item_id'; // Links to the item in the purchased_items_table
+  static const String userIdForeignKey = 'user_id';
+  static const String fastKeyTabTitle = 'fast_key_tab_title';
+  static const String fastKeyTabImage = 'fast_key_tab_image';
+  static const String fastKeyTabCount = 'fast_key_tab_count';
+
+  // Build #1.0.11 : FastKey Items Table Added
+  static const String fastKeyItemsTable = 'fast_key_items';
+  static const String fastKeyItemId = 'fast_key_item_id';
+  static const String fastKeyIdForeignKey = 'fast_key_id';
+  static const String fastKeyItemName = 'fast_key_item_name';
+  static const String fastKeyItemImage = 'fast_key_item_image';
+  static const String fastKeyItemPrice = 'fast_key_item_price';
+  static const String fastKeyItemSKU = 'fast_key_item_sku';
+  static const String fastKeyItemVariantId = 'fast_key_item_variant_id';
 }
 
 class DBHelper {
@@ -65,8 +76,13 @@ class DBHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
+    if (kDebugMode) {
+      print("#### DB Path: $path");
+    }
     // Uncomment the line below to delete the database during development/testing
-   // await deleteDatabase(path);
+    await deleteDatabase(path);
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.clear(); // This removes all stored preferences
 
     return await openDatabase(path, version: 1, onCreate: _createTables);
   }
@@ -118,108 +134,34 @@ class DBHelper {
     )
     ''');
 
-    // FastKey Table
+    // Build #1.0.11 : FastKey Tabs Table
     await db.execute('''
     CREATE TABLE ${AppDBConst.fastKeyTable} (
       ${AppDBConst.fastKeyId} INTEGER PRIMARY KEY AUTOINCREMENT,
-      ${AppDBConst.fastKeyName} TEXT NOT NULL,
-      ${AppDBConst.fastKeyImage} TEXT NOT NULL,
-      ${AppDBConst.fastKeyItemId} INTEGER NOT NULL,
-      FOREIGN KEY(${AppDBConst.fastKeyItemId}) REFERENCES ${AppDBConst.purchasedItemsTable}(${AppDBConst.itemId}) ON DELETE CASCADE
+      ${AppDBConst.userIdForeignKey} INTEGER NOT NULL,
+      ${AppDBConst.fastKeyTabTitle} TEXT NOT NULL,
+      ${AppDBConst.fastKeyTabImage} TEXT NOT NULL,
+      ${AppDBConst.fastKeyTabCount} INTEGER NOT NULL,
+      FOREIGN KEY(${AppDBConst.userIdForeignKey}) REFERENCES ${AppDBConst.userTable}(${AppDBConst.userId}) ON DELETE CASCADE
     )
     ''');
-  }
 
-  // Create a new order and update the user's order count
-  Future<int> createOrder(int userID, double orderTotal, String orderStatus, String orderType) async {
-    final db = await database;
-    final orderId = await db.insert(AppDBConst.orderTable, {
-      AppDBConst.userId: userID,
-      AppDBConst.orderTotal: orderTotal,
-      AppDBConst.orderStatus: orderStatus,
-      AppDBConst.orderType: orderType,
-      AppDBConst.orderDate: DateTime.now().toString(), // Current date
-      AppDBConst.orderTime: DateTime.now().toString(), // Current time
-    });
-
-    // Update the user's order count
-    await db.rawUpdate('''
-    UPDATE ${AppDBConst.userTable}
-    SET ${AppDBConst.userOrderCount} = ${AppDBConst.userOrderCount} + 1
-    WHERE ${AppDBConst.userId} = ?
-    ''', [userID]);
+    // Build #1.0.11 : FastKey Product Items Table
+    await db.execute('''
+    CREATE TABLE ${AppDBConst.fastKeyItemsTable} (
+      ${AppDBConst.fastKeyItemId} INTEGER PRIMARY KEY AUTOINCREMENT,
+      ${AppDBConst.fastKeyIdForeignKey} INTEGER NOT NULL,
+      ${AppDBConst.fastKeyItemName} TEXT NOT NULL,
+      ${AppDBConst.fastKeyItemImage} TEXT NOT NULL,
+      ${AppDBConst.fastKeyItemPrice} REAL NOT NULL,
+      ${AppDBConst.fastKeyItemSKU} TEXT NOT NULL,
+      ${AppDBConst.fastKeyItemVariantId} TEXT NOT NULL,
+      FOREIGN KEY(${AppDBConst.fastKeyIdForeignKey}) REFERENCES ${AppDBConst.fastKeyTable}(${AppDBConst.fastKeyId}) ON DELETE CASCADE
+    )
+    ''');
 
     if (kDebugMode) {
-      print('Order created with ID: $orderId');
-    }
-    return orderId;
-  }
-
-  // Add an item to an order
-  Future<void> addItemToOrder(int orderID, String name, String image, double price, int quantity, String sku) async {
-    final db = await database;
-
-    // Insert the item into the purchased items table
-    await db.insert(AppDBConst.purchasedItemsTable, {
-      AppDBConst.itemName: name,
-      AppDBConst.itemImage: image,
-      AppDBConst.itemPrice: price,
-      AppDBConst.itemCount: quantity,
-      AppDBConst.itemSumPrice: price * quantity,
-      AppDBConst.orderIdForeignKey: orderID,
-      AppDBConst.itemSKU: sku,
-    });
-
-    if (kDebugMode) {
-      print('Item added to order: $name');
-    }
-  }
-
-  // Fetch all orders for a specific user
-  Future<List<Map<String, dynamic>>> getUserOrders(int userID) async {
-    final db = await database;
-    return await db.query(
-      AppDBConst.orderTable,
-      where: '${AppDBConst.userId} = ?',
-      whereArgs: [userID],
-    );
-  }
-
-  // Fetch all items for a specific order
-  Future<List<Map<String, dynamic>>> getOrderItems(int orderID) async {
-    final db = await database;
-    return await db.query(
-      AppDBConst.purchasedItemsTable,
-      where: '${AppDBConst.orderIdForeignKey} = ?',
-      whereArgs: [orderID],
-    );
-  }
-
-  // Delete an item from an order
-  Future<void> deleteItem(int itemID) async {
-    final db = await database;
-    await db.delete(
-      AppDBConst.purchasedItemsTable,
-      where: '${AppDBConst.itemId} = ?',
-      whereArgs: [itemID],
-    );
-
-    if (kDebugMode) {
-      print('Item deleted with ID: $itemID');
-    }
-  }
-
-  // Delete an order from the database
-  Future<void> deleteOrder(int orderId) async {
-    final db = await database;
-    await db.delete(
-      AppDBConst.orderTable,
-      where: '${AppDBConst.orderId} = ?',
-      whereArgs: [orderId],
-    );
-
-    if (kDebugMode) {
-      print('Order deleted with ID: $orderId');
+      print("#### All tables created successfully!");
     }
   }
 
@@ -229,7 +171,7 @@ class DBHelper {
     db.close();
 
     if (kDebugMode) {
-      print('Database closed');
+      print("#### Database connection closed!");
     }
   }
 }

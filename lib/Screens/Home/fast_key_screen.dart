@@ -29,6 +29,7 @@ class _FastKeyScreenState extends State<FastKeyScreen> {
   SidebarPosition sidebarPosition = SidebarPosition.left; // Default to bottom sidebar
   OrderPanelPosition orderPanelPosition = OrderPanelPosition.right; // Default to right
   bool isLoading = true; // Add a loading state
+  final ValueNotifier<int?> fastKeyTabIdNotifier = ValueNotifier<int?>(null); // Add this
 
   @override
   void initState() {
@@ -110,10 +111,20 @@ class _FastKeyScreenState extends State<FastKeyScreen> {
                   child: Column(
                     children: [
                       // Add the CategoryScroll widget here
-                      CategoryList(isHorizontal: true, isLoading: isLoading),// Build #1.0.7
+                      CategoryList(isHorizontal: true, isLoading: isLoading, fastKeyTabIdNotifier: fastKeyTabIdNotifier),// Build #1.0.7
 
                       // Grid Layout
-                      NestedGridWidget(isHorizontal: true, isLoading: isLoading,  onItemAdded: _refreshOrderList), // Build #1.0.10
+                      ValueListenableBuilder<int?>( // Build #1.0.11 : Added Notifier for update list and counts
+                        valueListenable: fastKeyTabIdNotifier,
+                        builder: (context, fastKeyTabId, child) {
+                          return NestedGridWidget(
+                            isHorizontal: true,
+                            isLoading: isLoading,
+                            onItemAdded: _refreshOrderList,
+                            fastKeyTabIdNotifier: fastKeyTabIdNotifier,
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),

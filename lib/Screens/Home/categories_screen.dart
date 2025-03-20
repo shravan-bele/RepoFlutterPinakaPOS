@@ -31,6 +31,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   SidebarPosition sidebarPosition = SidebarPosition.left; // Default to bottom sidebar
   OrderPanelPosition orderPanelPosition = OrderPanelPosition.right; // Default to right
   bool isLoading = true; // Add a loading state
+  final ValueNotifier<int?> fastKeyTabIdNotifier = ValueNotifier<int?>(null); // Add this
 
 
   @override
@@ -113,10 +114,20 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     children: [
                       SizedBox(
                         width: 200,
-                          child: CategoryList(isHorizontal: false, isLoading: isLoading) // Build #1.0.7
+                          child: CategoryList(isHorizontal: false, isLoading: isLoading,  fastKeyTabIdNotifier: fastKeyTabIdNotifier) // Build #1.0.11
                       ),
                       // Grid Layout
-                       NestedGridWidget(isHorizontal: false, isLoading: isLoading,  onItemAdded: _refreshOrderList), // Build #1.0.10
+                      ValueListenableBuilder<int?>( // Build #1.0.11
+                        valueListenable: fastKeyTabIdNotifier,
+                        builder: (context, fastKeyTabId, child) {
+                          return NestedGridWidget(
+                            isHorizontal: true,
+                            isLoading: isLoading,
+                            onItemAdded: _refreshOrderList,
+                            fastKeyTabIdNotifier: fastKeyTabIdNotifier,
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),

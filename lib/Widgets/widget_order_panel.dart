@@ -9,7 +9,7 @@ import 'package:pinaka_pos/Widgets/widget_nested_grid_layout.dart';
 
 import '../Constants/text.dart';
 import '../Database/db_helper.dart';
-import '../Database/order_helper.dart';
+import '../Database/order_panel_db_helper.dart';
 
 class RightOrderPanel extends StatefulWidget {
   final String formattedDate;
@@ -84,7 +84,7 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
   // Build #1.0.10: Fetches order items for the active order
   Future<void> fetchOrderItems() async {
     if (orderHelper.activeOrderId != null) {
-      List<Map<String, dynamic>> items = await DBHelper.instance.getOrderItems(orderHelper.activeOrderId!);
+      List<Map<String, dynamic>> items = await orderHelper.getOrderItems(orderHelper.activeOrderId!);
 
       if (kDebugMode) {
         print("##### fetchOrderItems :$items");
@@ -197,7 +197,7 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
   // Build #1.0.10: Deletes an item from the active order
   void deleteItemFromOrder(int itemId) async {
     if (orderHelper.activeOrderId != null) {
-      await DBHelper.instance.deleteItem(itemId); // Delete item from DB
+      await orderHelper.deleteItem(itemId); // Delete item from DB
       fetchOrderItems(); // Refresh the order items list
     }
   }
