@@ -12,13 +12,14 @@ class FastKeyHelper { // Build #1.0.11 : FastKeyHelper for all fast key related 
     }
   }
 
-  Future<int> addFastKeyTab(int userId, String title, String image, int count) async {
+  Future<int> addFastKeyTab(int userId, String title, String image, int count, int? index) async {
     final db = await DBHelper.instance.database;
     final tabId = await db.insert(AppDBConst.fastKeyTable, {
       AppDBConst.userIdForeignKey: userId,
       AppDBConst.fastKeyTabTitle: title,
       AppDBConst.fastKeyTabImage: image,
       AppDBConst.fastKeyTabCount: count,
+      AppDBConst.fastKeyTabIndex: index ?? 'N/A', // Build #1.0.12: new row added
     });
 
     if (kDebugMode) {

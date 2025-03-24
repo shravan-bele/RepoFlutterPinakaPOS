@@ -427,7 +427,7 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
                                   ),
                                   Text(
-                                    "6 * \$${orderItem[AppDBConst.itemPrice]}",
+                                    "${orderItem[AppDBConst.itemCount]} * \$${orderItem[AppDBConst.itemPrice]}", // Build #1.0.12: now item count will update in order panel
                                     style: const TextStyle(color: Colors.black54),
                                   ),
                                 ],

@@ -51,10 +51,16 @@ class _CategoryListState extends State<CategoryList> {
     widget.fastKeyTabIdNotifier.addListener(_onTabChanged); // Listen to tab changes
   }
 
-  void _onTabChanged() { // Build #1.0.11
-    setState(() async {
-      // Rebuild the list when the tab changes
-      await _loadFastKeysTabs(); // Wait for tabs to load
+  void _onTabChanged() { // Build #1.0.12: fixed fast key tab related issue
+    if (kDebugMode) {
+      print("### _onTabChanged: New Tab ID: ${widget.fastKeyTabIdNotifier.value}");
+    }
+    // Perform asynchronous work first
+    _loadFastKeysTabs().then((_) {
+      // Update state synchronously
+      if (mounted) {
+        setState(() {});
+      }
     });
   }
 
@@ -125,8 +131,8 @@ class _CategoryListState extends State<CategoryList> {
     });
   }
 
-  Future<void> _addFastKeyTab(String title, String image) async { // Build #1.0.11
-    final newTabId = await fastKeyHelper.addFastKeyTab(userId ?? 1, title, image, 0);
+  Future<void> _addFastKeyTab(String title, String image) async {
+    final newTabId = await fastKeyHelper.addFastKeyTab(userId ?? 1, title, image, 0, 0);
 
     // Add the new tab to the local list
     setState(() {
@@ -141,6 +147,9 @@ class _CategoryListState extends State<CategoryList> {
 
     // Save the selected tab ID
     await fastKeyHelper.saveActiveFastKeyTab(newTabId);
+    if (kDebugMode) {
+      print("### _addFastKeyTab: Setting ValueNotifier to $newTabId");
+    }
     widget.fastKeyTabIdNotifier.value = newTabId; // Notify NestedGridWidget
   }
 
@@ -274,6 +283,7 @@ class _CategoryListState extends State<CategoryList> {
                       });
                       // Save the selected tab ID
                       await fastKeyHelper.saveActiveFastKeyTab(product.id);
+                      widget.fastKeyTabIdNotifier.value = product.id; // Build #1.0.12: fixed fast key tab changes grid items will re load
                     },
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 5.0),
@@ -433,6 +443,7 @@ class _CategoryListState extends State<CategoryList> {
                     });
                     // Save the selected tab ID
                     await fastKeyHelper.saveActiveFastKeyTab(product.id);
+                    widget.fastKeyTabIdNotifier.value = product.id; // Notify NestedGridWidget // Build #1.0.12: fixed fast key tab changes grid items will re load
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 5.0),
@@ -742,8 +753,10 @@ class _CategoryListState extends State<CategoryList> {
                 // Save the new selected tab ID
                 if (_selectedIndex != null) {
                   await fastKeyHelper.saveActiveFastKeyTab(fastKeyProducts[_selectedIndex!].id);
+                  widget.fastKeyTabIdNotifier.value = fastKeyProducts[_selectedIndex!].id; // Notify NestedGridWidget // Build #1.0.12: fixed fast key tab changes grid items will re load
                 } else {
                   await fastKeyHelper.saveActiveFastKeyTab(-1); // No tab selected
+                  widget.fastKeyTabIdNotifier.value = -1; // Notify NestedGridWidget
                 }
 
                 // Close the dialogs

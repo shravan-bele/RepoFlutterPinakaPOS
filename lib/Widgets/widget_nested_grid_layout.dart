@@ -17,6 +17,7 @@ class NestedGridWidget extends StatefulWidget {
   final bool isLoading;
   final VoidCallback? onItemAdded;
   final ValueNotifier<int?> fastKeyTabIdNotifier;
+  final bool showAddButton; // Build #1.0.12: New parameter to control add button visibility in category screen
 
   const NestedGridWidget({
     super.key,
@@ -24,6 +25,7 @@ class NestedGridWidget extends StatefulWidget {
     this.isLoading = false,
     this.onItemAdded,
     required this.fastKeyTabIdNotifier,
+    this.showAddButton = true, // Default to true for backward compatibility
   });
 
   @override
@@ -66,11 +68,21 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
   void initState() {
     super.initState();
     reorderedIndices = List.filled(fastKeyProductItems.length, null);
-    _loadActiveFastKeyTabId();
-    widget.fastKeyTabIdNotifier.addListener(_onTabChanged);
+    _loadActiveFastKeyTabId().then((_) { // Build #1.0.12: fixed fast key tab related issues
+      widget.fastKeyTabIdNotifier.addListener(_onTabChanged);
+    });
   }
 
-  void _onTabChanged() { // Build #1.0.11
+  void _onTabChanged() { // Build #1.0.12: fixed fast key tab related issues
+    if (kDebugMode) {
+      print("### _onTabChanged: New Tab ID: ${widget.fastKeyTabIdNotifier.value}");
+    }
+    if (widget.fastKeyTabIdNotifier.value == null) {
+      if (kDebugMode) {
+        print("### _onTabChanged: Tab ID is null, skipping update");
+      }
+      return;
+    }
     setState(() {
       _fastKeyTabId = widget.fastKeyTabIdNotifier.value;
     });
@@ -84,20 +96,27 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
     super.dispose();
   }
 
-  Future<void> _loadActiveFastKeyTabId() async { // Build #1.0.11
+  Future<void> _loadActiveFastKeyTabId() async {
     final lastSelectedTabId = await fastKeyHelper.getActiveFastKeyTab();
+    if (kDebugMode) {
+      print("### _loadActiveFastKeyTabId: Last Selected Tab ID: $lastSelectedTabId");
+    }
     setState(() {
       _fastKeyTabId = lastSelectedTabId;
     });
     if (kDebugMode) {
-      print("_loadActiveFastKeyTabId, _fastKeyTabId: $_fastKeyTabId");
+      print("### _loadActiveFastKeyTabId: _fastKeyTabId set to $_fastKeyTabId");
     }
     _loadFastKeyTabItems();
   }
 
-  Future<void> _loadFastKeyTabItems() async { // Build #1.0.11
-    if (_fastKeyTabId == null) return;
-
+  Future<void> _loadFastKeyTabItems() async {
+    if (_fastKeyTabId == null) {
+      if (kDebugMode) {
+        print("### _fastKeyTabId is null, cannot load items");
+      }
+      return;
+    }
     final items = await fastKeyHelper.getFastKeyItems(_fastKeyTabId!);
     setState(() {
       fastKeyProductItems = List<Map<String, dynamic>>.from(items);
@@ -107,10 +126,14 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
 
   Future<void> _addFastKeyTabItem(String name, String image, double price) async {
     if (_fastKeyTabId == null) {
-      print("### _fastKeyTabId is null, cannot add item");
+      if (kDebugMode) {
+        print("### _fastKeyTabId is null, cannot add item");
+      }
       return;
     }
-    print("### _addFastKeyTabItem _fastKeyTabId: $_fastKeyTabId");
+    if (kDebugMode) {
+      print("### _addFastKeyTabItem _fastKeyTabId: $_fastKeyTabId");
+    }
 
     await fastKeyHelper.addFastKeyItem(_fastKeyTabId!, name, image, price);
 
@@ -150,7 +173,9 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
   }
 
   void _onItemSelected(int index) async {
-    print("Item selected: $index");
+    if (kDebugMode) {
+      print("Item selected: $index");
+    }
     if (currentLevel + 1 < navigationPath.length) {
       setState(() {
         currentLevel++;
@@ -214,7 +239,9 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
       }).toList();
     });
 
-    print("Search Results: $searchResults");
+    if (kDebugMode) {
+      print("Search Results: $searchResults");
+    }
   }
 
   Future<void> _showAddItemDialog(int listIndex) async {
@@ -290,14 +317,18 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
               ),
               TextButton(
                 onPressed: selectedProduct != null ? () async {
-                  print("### onPressed:2 _fastKeyTabId - $_fastKeyTabId");
+                  if (kDebugMode) {
+                    print("### onPressed:2 _fastKeyTabId - $_fastKeyTabId");
+                  }
                   if (_fastKeyTabId != null) {
                     await _addFastKeyTabItem(
                       selectedProduct!['title'],
                       selectedProduct!['image'],
                       double.parse(selectedProduct!['price'].replaceAll('\$', '')),
                     );
-                    print("### onPressed: _fastKeyTabId - $_fastKeyTabId, fastKeyProductItems.length: ${fastKeyProductItems.length}");
+                    if (kDebugMode) {
+                      print("### onPressed: _fastKeyTabId - $_fastKeyTabId, fastKeyProductItems.length: ${fastKeyProductItems.length}");
+                    }
 
                     await fastKeyHelper.updateFastKeyTabCount(_fastKeyTabId!, fastKeyProductItems.length);
 
@@ -363,7 +394,8 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final totalCount = fastKeyProductItems.length + (_fastKeyTabId != null ? 1 : 0);
+    final totalCount = fastKeyProductItems.length +
+        (_fastKeyTabId != null && widget.showAddButton ? 1 : 0); // Build #1.0.12: Modified condition
     final theme = Theme.of(context);
 
     return Expanded(
@@ -434,8 +466,8 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                   onReorder: (oldIndex, newIndex) {
                     if (oldIndex == 0 || newIndex == 0) return;
 
-                    final adjustedOldIndex = oldIndex - 1;
-                    final adjustedNewIndex = newIndex - 1;
+                    final adjustedOldIndex = oldIndex - (widget.showAddButton ? 1 : 0); // Build #1.0.12:
+                    final adjustedNewIndex = newIndex - (widget.showAddButton ? 1 : 0);
 
                     if (adjustedOldIndex < 0 || adjustedNewIndex < 0 || adjustedOldIndex >= fastKeyProductItems.length || adjustedNewIndex >= fastKeyProductItems.length) {
                       return;
@@ -452,7 +484,8 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                     });
                   },
                   itemBuilder: (context, index) {
-                    if (_fastKeyTabId != null && index == 0) {
+                    // Show add button only if showAddButton is true and it's the first item
+                    if (widget.showAddButton && _fastKeyTabId != null && index == 0) { // Build #1.0.12:
                       return Container(
                         key: const ValueKey('add_button'),
                         child: GestureDetector(
@@ -472,7 +505,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                         ),
                       );
                     } else {
-                      final itemIndex = _fastKeyTabId != null ? index - 1 : index;
+                      final itemIndex = widget.showAddButton && _fastKeyTabId != null ? index - 1 : index; // Build #1.0.12
                       if (itemIndex >= fastKeyProductItems.length) {
                         return SizedBox.shrink(); // Handle out-of-bounds index
                       }

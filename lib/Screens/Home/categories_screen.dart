@@ -125,6 +125,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                             isLoading: isLoading,
                             onItemAdded: _refreshOrderList,
                             fastKeyTabIdNotifier: fastKeyTabIdNotifier,
+                            showAddButton: false, // Build #1.0.12: This will hide the add button in CategoriesScreen
                           );
                         },
                       ),

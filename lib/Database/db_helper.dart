@@ -46,6 +46,7 @@ class AppDBConst { // Build #1.0.10 - Naveen: Updated DB tables constants
   static const String fastKeyTabTitle = 'fast_key_tab_title';
   static const String fastKeyTabImage = 'fast_key_tab_image';
   static const String fastKeyTabCount = 'fast_key_tab_count';
+  static const String fastKeyTabIndex = 'fast_key_tab_index'; // Build #1.0.12
 
   // Build #1.0.11 : FastKey Items Table Added
   static const String fastKeyItemsTable = 'fast_key_items';
@@ -142,6 +143,7 @@ class DBHelper {
       ${AppDBConst.fastKeyTabTitle} TEXT NOT NULL,
       ${AppDBConst.fastKeyTabImage} TEXT NOT NULL,
       ${AppDBConst.fastKeyTabCount} INTEGER NOT NULL,
+      ${AppDBConst.fastKeyTabIndex} TEXT NOT NULL,
       FOREIGN KEY(${AppDBConst.userIdForeignKey}) REFERENCES ${AppDBConst.userTable}(${AppDBConst.userId}) ON DELETE CASCADE
     )
     ''');
