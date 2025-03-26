@@ -4,6 +4,7 @@ import 'package:flutter_svg/svg.dart';
 import '../../Blocs/Auth/login_bloc.dart';
 import '../../Constants/text.dart';
 import '../../Database/db_helper.dart';
+import '../../Database/user_db_helper.dart';
 import '../../Helper/api_response.dart';
 import '../../Models/Auth/login_model.dart';
 import '../../Repositories/Auth/login_repository.dart';
@@ -20,62 +21,55 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final List<String> _password = List.filled(6, ""); // Password storage
-  late LoginRequest _request;
+  final List<String> _password = List.filled(6, "");
   late LoginBloc _bloc;
+  final UserDbHelper _userDbHelper = UserDbHelper();
 
   @override
   void initState() {
-  super.initState();
-  _request = LoginRequest("pinaka_employee", "pinaka_employee@123"); // Build #1.0.8 - added for test
-  _bloc = LoginBloc(LoginRepository(_request));
- // createTestUserDB();
+    super.initState();
+    _bloc = LoginBloc(LoginRepository());
+  //  _checkExistingUser(); // Un comment this line if auto login needed
   }
 
-  Future<void> createTestUserDB() async { // Build #1.0.10 : Added test user db
-    final db = await DBHelper.instance.database;
-    await db.insert(AppDBConst.userTable, {
-      AppDBConst.userName: 'pinaka_employee',
-      AppDBConst.userEmail: 'pinaka_employee@123',
-      AppDBConst.userPhone: '1234567890', // Optional
-      AppDBConst.userAddress: '123 Main St', // Optional
-    });
-    if (kDebugMode) {
-      print('User created successfully');
+  Future<void> _checkExistingUser() async {
+    bool isLoggedIn = await _userDbHelper.isUserLoggedIn();
+    if (isLoggedIn && mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const FastKeyScreen()),
+      );
     }
   }
 
-  @override
-  void dispose() {
-    _bloc.dispose();
-    super.dispose();
-  }
-
-  // Update password on digit press
   void _updatePassword(String value) {
     for (int i = 0; i < _password.length; i++) {
       if (_password[i].isEmpty) {
         setState(() {
-          _password[i] = value; // Fill the field with the digit pressed
+          _password[i] = value;
         });
         if (kDebugMode) {
           print("Password updated: $_password");
-        } // Print password after update
+        }
+
+        // Auto-submit when 6 digits are entered
+        // if (i == 5) {
+        //   _handleLogin();
+        // }
         break;
       }
     }
   }
 
-  // Delete single password character with animation
   void _deletePassword() {
     for (int i = _password.length - 1; i >= 0; i--) {
       if (_password[i].isNotEmpty) {
         setState(() {
-          _password[i] = ""; // Clear only the last entered field
+          _password[i] = "";
         });
         if (kDebugMode) {
           print("Password deleted: $_password");
-        } // Print password after deletion
+        }
         break;
       }
     }
@@ -91,13 +85,30 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     if (kDebugMode) {
       print("Password cleared: $_password");
-    } // Print password after clearing all fields
+    }
+  }
+
+  bool _validatePin() { // Build #1.0.13
+    if (_password.any((digit) => digit.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter 6-digit PIN')),
+      );
+      return false;
+    }
+    return true;
+  }
+
+  void _handleLogin() {
+    if (!_validatePin()) return;
+
+    final pin = _password.join();
+    _bloc.fetchLoginToken(LoginRequest(pin));
   }
 
   @override
   Widget build(BuildContext context) {
-    // Get device orientation
     bool isPortrait = MediaQuery.of(context).orientation == Orientation.portrait;
+
     return Scaffold(
       body: Row(
         children: [
@@ -105,11 +116,11 @@ class _LoginScreenState extends State<LoginScreen> {
           Expanded(
             flex: 1,
             child: Container(
-              color: const Color(0xFF1E2745), // Background color: #1E2745
+              color: const Color(0xFF1E2745),
               child: Center(
                 child: SvgPicture.asset(
-                  'assets/svg/app_logo.svg', // Path to your SVG logo
-                  height: 150, // Set the height of the logo
+                  'assets/svg/app_logo.svg',
+                  height: 150,
                 ),
               ),
             ),
@@ -123,22 +134,21 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Secure Password Fields with Animation
+                  // Password Fields
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(6, (index) {
-                      // Adjust padding based on orientation
                       double paddingValue = isPortrait ? 8.5 : 12.5;
                       return Padding(
-                        padding:  EdgeInsets.symmetric(horizontal: paddingValue),
+                        padding: EdgeInsets.symmetric(horizontal: paddingValue),
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 300),
                           child: Container(
-                            key: ValueKey<int>(index), // Unique key to trigger animation
+                            key: ValueKey<int>(index),
                             width: isPortrait ? 50.0 : 70.0,
                             height: isPortrait ? 50.0 : 70.0,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFFFFFF), // Background color: #FFFFFF
+                              color: const Color(0xFFFFFFFF),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                   color: Colors.grey.shade300, width: 1),
@@ -146,15 +156,16 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: Center(
                               child: _password[index].isEmpty
                                   ? SvgPicture.asset(
-                                'assets/svg/password_placeholder.svg', // Path to your empty image
-                                width: 15, // Set appropriate width
-                                height: 15, // Set appropriate height
+                                'assets/svg/password_placeholder.svg',
+                                width: 15,
+                                height: 15,
                               )
                                   : SvgPicture.asset(
                                 'assets/svg/password_placeholder.svg',
-                                colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
-                                width: 15, // Set appropriate width
-                                height: 15, // Set appropriate height
+                                colorFilter: const ColorFilter.mode(
+                                    Colors.black, BlendMode.srcIn),
+                                width: 15,
+                                height: 15,
                               ),
                             ),
                           ),
@@ -165,52 +176,23 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 32),
 
                   // Custom NumPad
-                CustomNumPad( //Build #1.0.2 : Updated the custom num pad code
-                  onDigitPressed: (value) {
-                    _updatePassword(value);
-                  },
-                  onClearPressed: () {
-                    _clearPassword();
-                  },
-                  onDeletePressed: () {
-                    _deletePassword();
-                  },
-                  actionButtonType: ActionButtonType.delete, // SHOW DELETE in Login Screen
-                ),
+                  CustomNumPad(
+                    onDigitPressed: _updatePassword,
+                    onClearPressed: _clearPassword,
+                    onDeletePressed: _deletePassword,
+                    actionButtonType: ActionButtonType.delete,
+                  ),
 
                   const SizedBox(height: 32),
 
-                  // Login Button Below NumPad
+                  // Login Button
                   SizedBox(
-                    width: MediaQuery.of(context).size.width / (isPortrait ? 7.3 : 7.2), // Dynamic width
-                    height: MediaQuery.of(context).size.height / (isPortrait ? 20.0 : 10.0), // Dynamic width
+                    width: MediaQuery.of(context).size.width /
+                        (isPortrait ? 7.3 : 7.2),
+                    height: MediaQuery.of(context).size.height /
+                        (isPortrait ? 20.0 : 10.0),
                     child: ElevatedButton(
-                      onPressed: () {
-                        // Handle login press
-                        if (kDebugMode) {
-                          print("Login pressed");
-                          print("#### Entered OTP : $_password");
-                        }
-
-                        /// login api
-                        _bloc.fetchLoginToken(); // Build #1.0.8
-
-                        _bloc.loginStream.listen((event) async {
-                          if (event.status == Status.COMPLETED) {
-                            if (event.data?.token != null) {
-                              // Navigate to FastKeyScreen
-                              if(mounted) {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const FastKeyScreen(),
-                                  ),
-                                );
-                              }
-                            }
-                          }
-                        });
-                      },
+                      onPressed: _handleLogin,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1E2745), // Background color: #1E2745
                         foregroundColor: Colors.white,
@@ -219,77 +201,73 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
+                      // In LoginScreen.dart - update the ElevatedButton's child widget
                       child: StreamBuilder<APIResponse<LoginResponse>>(
                         stream: _bloc.loginStream,
                         builder: (context, snapshot) {
                           if (snapshot.hasData) {
                             switch (snapshot.data?.status) {
                               case Status.LOADING:
-                                if (kDebugMode) {
-                                  print("LOADING ");
-                                }
-                                return Loading(
-                                    loadingMessage: snapshot.data?.message);
-                                break;
+                                return Center(
+                                  child: Loading(
+                                    loadingMessage: snapshot.data?.message,
+                                  ),
+                                );
                               case Status.COMPLETED:
-                                if (kDebugMode) {
-                                  print("COMPLETED ");
-                                }
                                 if (snapshot.data?.data?.token != null) {
-                                  if (kDebugMode) {
-                                    print('login token not null: ${snapshot.data?.data?.token}');
-                                  }
-                                  return Loading(
-                                      loadingMessage: TextConstants.loading);
+                                  // Navigate after the current frame is built
+                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+
+                                    if (kDebugMode) {
+                                      print("Navigating to FastKeyScreen...");
+                                    }
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const FastKeyScreen()),
+                                    );
+
+                                  });
+                                  return Center(
+                                    child: Loading(
+                                      loadingMessage: TextConstants.loading,
+                                    ),
+                                  );
                                 } else {
-                                  var error = snapshot.data?.data?.message ?? "";
-                                  snapshot.data?.data?.message = TextConstants.login;
-                                  return Text(
-                                    error,
+                                  return Center(
+                                    child: Text(
+                                      snapshot.data?.data?.message ?? "",
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 16,
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              case Status.ERROR:
+                                return Center(
+                                  child: Text(
+                                    snapshot.data?.message ?? "",
                                     textAlign: TextAlign.center,
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 16,
                                       color: Colors.red,
                                     ),
-                                  );
-                                }
-                                break;
-                              case Status.ERROR:
-                                if (kDebugMode) {
-                                  print("Error LoginView...${snapshot.data?.message}");
-                                }
-                                String? message = snapshot.data?.message ?? "";
-                                // String errorMsgText = LoggerHelper.splitBeforeException(message);
-                                return Text(
-                                  message,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                    color: Colors.red,
                                   ),
                                 );
-                                // return Error(
-                                //   errorMessage: message,
-                                //   onRetryPressed: () => _bloc.fetchLoginToken(),
-                                // );
-                                break;
                               default:
                                 break;
                             }
-                          } else {
-                            if (kDebugMode) {
-                              print("else snapshot is empty ");
-                            }
                           }
-
-                          return const Text(
-                            TextConstants.loginBtnText,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                             // color: CustomColors.darkBlueTextButtonColor,
+                          return const Center(
+                            child: Text(
+                              TextConstants.loginBtnText,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
                             ),
                           );
                         },

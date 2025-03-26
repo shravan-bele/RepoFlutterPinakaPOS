@@ -1,4 +1,4 @@
-class LoginResponse { // Build #1.0.8, Naveen added
+class LoginResponse {
   bool? success;
   int? statusCode;
   String? code;
@@ -10,6 +10,7 @@ class LoginResponse { // Build #1.0.8, Naveen added
   String? firstName;
   String? lastName;
   String? displayName;
+ // String? role; // New field added
 
   LoginResponse({
     this.success,
@@ -23,6 +24,7 @@ class LoginResponse { // Build #1.0.8, Naveen added
     this.firstName,
     this.lastName,
     this.displayName,
+   // this.role,
   });
 
   LoginResponse.fromJson(Map<String, dynamic> json) {
@@ -37,6 +39,7 @@ class LoginResponse { // Build #1.0.8, Naveen added
     firstName = json['data']?['firstName'];
     lastName = json['data']?['lastName'];
     displayName = json['data']?['displayName'];
+  //  role = json['data']?['role']; // Mapping the new field
   }
 
   Map<String, dynamic> toJson() {
@@ -53,31 +56,24 @@ class LoginResponse { // Build #1.0.8, Naveen added
         'firstName': firstName,
         'lastName': lastName,
         'displayName': displayName,
+      //  'role': role, // Adding the new field to JSON
       }
     };
   }
 }
 
+class LoginRequest { // Build #1.0.13: Updated login request
+  String _empLoginPin;
 
-class LoginRequest{
-
-  String _username;
-  String _password;
-
-  set username(String value) {
-    _username = value;
+  set empLoginPin(String value) {
+    _empLoginPin = value;
   }
 
-  set password(String value) {
-    _password = value;
-  }
-
-  LoginRequest(this._username, this._password,);
+  LoginRequest(this._empLoginPin);
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
-    data['username'] = _username;
-    data['password'] = _password;
+    data['emp_login_pin'] = _empLoginPin;
     return data;
   }
 }

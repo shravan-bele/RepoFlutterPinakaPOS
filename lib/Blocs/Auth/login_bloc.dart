@@ -2,12 +2,15 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../../Constants/text.dart';
+import '../../Database/db_helper.dart';
+import '../../Database/user_db_helper.dart';
 import '../../Helper/api_response.dart';
 import '../../Helper/file_helper.dart';
 import '../../Models/Auth/login_model.dart';
 import '../../Repositories/Auth/login_repository.dart';
 
 class LoginBloc { // Build #1.0.8
+  final UserDbHelper _userDbHelper = UserDbHelper();
   final LoginRepository _loginRepository;
   final StreamController<APIResponse<LoginResponse>> _loginController = StreamController<APIResponse<LoginResponse>>.broadcast();
 
@@ -20,51 +23,39 @@ class LoginBloc { // Build #1.0.8
     }
   }
 
-  Future<void> fetchLoginToken() async {
+  // In LoginBloc.dart
+  Future<void> fetchLoginToken(LoginRequest request) async { // Build #1.0.13: Added Login request
     if (_loginController.isClosed) return;
 
     loginSink.add(APIResponse.loading(TextConstants.loading));
     try {
-      String token = await _loginRepository.fetchLoginToken();
-      await FileHelper("${TextConstants.login}${TextConstants.jsonfileExtension}").writeJOSNDataToFile(token);
-
+      String token = await _loginRepository.fetchLoginToken(request);
       LoginResponse loginResponse = LoginResponse.fromJson(json.decode(token));
-      loginSink.add(APIResponse.completed(loginResponse));
-    } catch (e, s) {
-      _handleException(e, "fetchLoginToken");
-      if (kDebugMode) print("Exception in fetchLoginToken: $e\nStackTrace: $s");
-    }
-  }
 
-  Future<void> fetchRefreshToken() async {
-    if (_loginController.isClosed) return;
-
-    loginSink.add(APIResponse.loading('loading'));
-    try {
-      if (await _checkTokenStatus()) {
-        String token = await _loginRepository.fetchRefreshToken();
-        await FileHelper("${TextConstants.login}${TextConstants.jsonfileExtension}").writeJOSNDataToFile(token);
-
-        LoginResponse loginResponse = LoginResponse.fromJson(json.decode(token));
+      if (loginResponse.token != null && loginResponse.success == true) {
+        // Save user data in SQLite if not already exists
+        final existingUser = await _userDbHelper.getUserData();
+        if (existingUser == null ||
+            existingUser[AppDBConst.userToken] != loginResponse.token) {
+          await _userDbHelper.saveUserData(loginResponse); // Build #1.0.13: Saving Login Response in DB adn using from DB
+        }
         loginSink.add(APIResponse.completed(loginResponse));
       } else {
-        loginSink.add(APIResponse.error("Token not available"));
+        // Show the exact error message from API
+        loginSink.add(APIResponse.error(
+            loginResponse.message ?? "Invalid PIN or user not found."));
       }
-    } catch (e, s) {
-      _handleException(e, "fetchRefreshToken");
-      if (kDebugMode) print("Exception in fetchRefreshToken: $e\nStackTrace: $s");
+    } catch (e) {
+      // Handle specific API error response
+      if (e.toString().contains('invalid_pin')) {
+        loginSink.add(APIResponse.error("Invalid PIN or user not found."));
+      } else if (e.toString().contains('SocketException')) {
+        loginSink.add(APIResponse.error("Network error. Please check your connection."));
+      } else {
+        loginSink.add(APIResponse.error("An error occurred. Please try again."));
+      }
+      if (kDebugMode) print("Exception in fetchLoginToken: $e");
     }
-  }
-
-  Future<bool> _checkTokenStatus() async {
-    String? token = await FileHelper.readToken();
-    return token!.isNotEmpty;
-  }
-
-  void _handleException(dynamic e, String methodName) {
-    String errorMessage = "$methodName: ${e.toString()}";
-    loginSink.add(APIResponse.error(errorMessage));
-    if (kDebugMode) print(errorMessage);
   }
 
   void dispose() {

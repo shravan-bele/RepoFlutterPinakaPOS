@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../Database/order_panel_db_helper.dart';
 import '../../Widgets/widget_category_list.dart';
 import '../../Widgets/widget_nested_grid_layout.dart';
 import '../../Widgets/widget_order_panel.dart';
@@ -30,6 +31,7 @@ class _FastKeyScreenState extends State<FastKeyScreen> {
   OrderPanelPosition orderPanelPosition = OrderPanelPosition.right; // Default to right
   bool isLoading = true; // Add a loading state
   final ValueNotifier<int?> fastKeyTabIdNotifier = ValueNotifier<int?>(null); // Add this
+  final OrderHelper orderHelper = OrderHelper();
 
   @override
   void initState() {
@@ -73,6 +75,23 @@ class _FastKeyScreenState extends State<FastKeyScreen> {
                   sidebarPosition = SidebarPosition.left;
                 }
               });
+            },
+            onProductSelected: (product) { // Build #1.0.13 : Added product search
+              // Convert price from String to double safely
+              double price;
+              try {
+                price = double.tryParse(product.price ?? '0.00') ?? 0.00;
+              } catch (e) {
+                price = 0.00;
+              }
+
+              orderHelper.addItemToOrder(
+                product.name ?? 'Unknown',
+                product.images?.isNotEmpty == true ? product.images!.first : '',
+                price, // Now properly converted to double
+                1, // quantity
+                'SKU${product.name}', // SKU
+              );
             },
           ),
           Divider( // Build #1.0.6

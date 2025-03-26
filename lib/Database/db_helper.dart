@@ -9,11 +9,14 @@ class AppDBConst { // Build #1.0.10 - Naveen: Updated DB tables constants
   // User Table
   static const String userTable = 'user_table';
   static const String userId = 'user_id';
-  static const String userName = 'name';
+  static const String userRole = 'role';
+  static const String userDisplayName = 'display_name';
   static const String userEmail = 'email';
+  static const String userFirstName = 'first_name'; // Build #1.0.13: Updated User Table
+  static const String userLastName = 'last_name';
+  static const String userNickname = 'nickname';
+  static const String userToken = 'token';
   static const String userOrderCount = 'order_count'; // Tracks total orders by the user
-  static const String userPhone = 'phone'; // Optional: For contact details
-  static const String userAddress = 'address'; // Optional: For shipping/billing address
 
   // Orders Table
   static const String orderTable = 'orders_table';
@@ -93,11 +96,14 @@ class DBHelper {
     // User Table
     await db.execute('''
     CREATE TABLE ${AppDBConst.userTable} (
-      ${AppDBConst.userId} INTEGER PRIMARY KEY AUTOINCREMENT,
-      ${AppDBConst.userName} TEXT NOT NULL,
-      ${AppDBConst.userEmail} TEXT NOT NULL UNIQUE,
-      ${AppDBConst.userPhone} TEXT, -- Optional: For contact details
-      ${AppDBConst.userAddress} TEXT, -- Optional: For shipping/billing address
+      ${AppDBConst.userId} INTEGER PRIMARY KEY,
+      ${AppDBConst.userRole} TEXT,
+      ${AppDBConst.userDisplayName} TEXT,
+      ${AppDBConst.userEmail} TEXT UNIQUE NOT NULL,
+      ${AppDBConst.userFirstName} TEXT,
+      ${AppDBConst.userLastName} TEXT,
+      ${AppDBConst.userNickname} TEXT,
+      ${AppDBConst.userToken} TEXT NOT NULL,
       ${AppDBConst.userOrderCount} INTEGER DEFAULT 0 -- Optional: Tracks total orders by the user
     )
     ''');

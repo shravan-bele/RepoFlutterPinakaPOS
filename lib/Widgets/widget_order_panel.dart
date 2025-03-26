@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:buttons_tabbar/buttons_tabbar.dart';
 import 'package:dotted_line/dotted_line.dart';
 import 'package:flutter/foundation.dart';
@@ -408,13 +410,44 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
                         ),
                         child: Row(
                           children: [
-                            ClipRRect(
+                            // Replace the ClipRRect widget with this:
+                            ClipRRect( // Build #1.0.13 : updated images from db not static default images
                               borderRadius: BorderRadius.circular(10),
-                              child: SvgPicture.asset(
-                                'assets/svg/password_placeholder.svg',
+                              child: orderItem[AppDBConst.itemImage].toString().startsWith('http')
+                                  ? Image.network(
+                                orderItem[AppDBConst.itemImage],
                                 height: 30,
                                 width: 30,
                                 fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return SvgPicture.asset(
+                                    'assets/svg/password_placeholder.svg',
+                                    height: 30,
+                                    width: 30,
+                                    fit: BoxFit.cover,
+                                  );
+                                },
+                              )
+                                  : orderItem[AppDBConst.itemImage].toString().startsWith('assets/')
+                                  ? SvgPicture.asset(
+                                orderItem[AppDBConst.itemImage],
+                                height: 30,
+                                width: 30,
+                                fit: BoxFit.cover,
+                              )
+                                  : Image.file(
+                                File(orderItem[AppDBConst.itemImage]),
+                                height: 30,
+                                width: 30,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return SvgPicture.asset(
+                                    'assets/svg/password_placeholder.svg',
+                                    height: 30,
+                                    width: 30,
+                                    fit: BoxFit.cover,
+                                  );
+                                },
                               ),
                             ),
                             const SizedBox(width: 10),

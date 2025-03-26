@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:pinaka_pos/Helper/url_helper.dart';
+import '../Database/db_helper.dart';
+import '../Database/user_db_helper.dart';
 import 'file_helper.dart';
 import 'package:pinaka_pos/Helper/Extentions/exceptions.dart';
 
@@ -16,7 +18,8 @@ class APIHelper { // Build #1.0.8, Naveen added
 
     try {
       finalUrl = UrlHelper.baseUrl + url;
-      token = await FileHelper.readToken(); // Ensure token is read asynchronously
+      final userData = await UserDbHelper().getUserData();
+      token =  userData?[AppDBConst.userToken] ?? ""; // Build #1.0.13: token get from the user table from db
 
       if (kDebugMode) {
         print("URL: $finalUrl");
@@ -49,7 +52,8 @@ class APIHelper { // Build #1.0.8, Naveen added
 
     try {
       finalUrl = UrlHelper.baseUrl + url;
-      token = await FileHelper.readToken();
+      final userData = await UserDbHelper().getUserData();
+      token =  userData?[AppDBConst.userToken] ?? "";
 
       if (kDebugMode) {
         print("URL: $finalUrl");
@@ -80,7 +84,8 @@ class APIHelper { // Build #1.0.8, Naveen added
 
     try {
       finalUrl = UrlHelper.baseUrl + url;
-      token = await FileHelper.readToken();
+      final userData = await UserDbHelper().getUserData();
+      token =  userData?[AppDBConst.userToken] ?? "";
       body = json.encode(params);
 
       if (kDebugMode) {
@@ -117,7 +122,8 @@ class APIHelper { // Build #1.0.8, Naveen added
 
     try {
       finalUrl = UrlHelper.baseUrl + url;
-      token = await FileHelper.readToken();
+      final userData = await UserDbHelper().getUserData();
+      token =  userData?[AppDBConst.userToken] ?? "";
       File formDataFile = await fileHelper.getFile();
 
       if (kDebugMode) {
@@ -156,7 +162,8 @@ class APIHelper { // Build #1.0.8, Naveen added
 
     try {
       finalUrl = UrlHelper.baseUrl + url;
-      token = await FileHelper.readToken();
+      final userData = await UserDbHelper().getUserData();
+      token =  userData?[AppDBConst.userToken] ?? "";
 
       final response = await http.delete(Uri.parse(finalUrl), headers: {
         HttpHeaders.authorizationHeader: "Bearer $token",
@@ -181,7 +188,8 @@ class APIHelper { // Build #1.0.8, Naveen added
 
     try {
       finalUrl = UrlHelper.baseUrl + url;
-      token = await FileHelper.readToken();
+      final userData = await UserDbHelper().getUserData();
+      token =  userData?[AppDBConst.userToken] ?? "";
       body = json.encode(params);
 
       if (kDebugMode) {

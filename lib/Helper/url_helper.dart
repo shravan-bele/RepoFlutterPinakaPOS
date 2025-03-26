@@ -9,7 +9,7 @@ class UrlHelper {
     _AndroidApiKey : "ANDROID"
   };
 //Hosts
-  static const  String _dev = "https://srilokanatha.org/";
+  static const  String _dev = "https://pinakapos.techkumard.com/"; // Build #1.0.13: new base url
   static const  String _uat = "http://uatapi.pinaka.com/";
   static const  String _prod = "http://api.pinaka.com/";
 
@@ -20,6 +20,7 @@ class UrlHelper {
 /////START: make changes here to switch environment
   static const  String host = _dev ;
   static const  String baseUrl = host;
+  static const  String componentVersionUrl = "wp-json/pinaka-pos/v1/"; // Build #1.0.13: new componentVersionUrl
   // static const  String apiKey = _devApiKey ;
   static final String apiKey = Platform.isIOS ? _iOSApiKey : _AndroidApiKey; // Build #1.0.8, Naveen updated this line
 
@@ -49,5 +50,19 @@ class UrlHelper {
 
   static const  String assets = "assets/public";
 
+}
+
+class UrlMethodConstants { // Build #1.0.13
+  static const String token          = "token";
+  static const String products       = "products";
+}
+
+class UrlParameterConstants { // Build #1.0.13
+  static const  String productSearchParameter = "?search=";
+
+}
+
+class EndUrlConstants { // Build #1.0.13
+  static const  String productSearchEndUrl = "&page=1&limit=10";
 }
 
