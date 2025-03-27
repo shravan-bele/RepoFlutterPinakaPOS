@@ -4,12 +4,14 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:pinaka_pos/Utilities/textfield_search.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 
 import '../Constants/text.dart';
 import '../Database/db_helper.dart';
 import '../Database/fast_key_db_helper.dart';
 import '../Database/order_panel_db_helper.dart';
+import '../Helper/auto_search.dart';
 import '../Utilities/shimmer_effect.dart';
 
 class NestedGridWidget extends StatefulWidget {
@@ -64,6 +66,10 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
   List<Map<String, dynamic>> searchResults = [];
   Map<String, dynamic>? selectedProduct;
 
+  TextEditingController _productSearchController = TextEditingController();
+  final _searchTextKey = GlobalKey<TextFieldSearchState>();
+  late SearchProduct _autoSuggest;
+
   @override
   void initState() {
     super.initState();
@@ -71,7 +77,17 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
     _loadActiveFastKeyTabId().then((_) { // Build #1.0.12: fixed fast key tab related issues
       widget.fastKeyTabIdNotifier.addListener(_onTabChanged);
     });
+    _autoSuggest= SearchProduct();
+    _productSearchController.addListener(_listenProductItemSearch);
   }
+
+  _listenProductItemSearch(){
+    if(_productSearchController.text.isEmpty) {
+      _searchTextKey.currentState?.resetList();
+    }
+    _autoSuggest.listentextchange(_productSearchController.text ?? "");
+  }
+
 
   void _onTabChanged() { // Build #1.0.12: fixed fast key tab related issues
     if (kDebugMode) {
@@ -269,6 +285,20 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                       ),
                       onChanged: (value) {
                         searchProducts(value, setStateDialog);
+                      },
+                    ),
+                    TextFieldSearch(
+                      label: "Search Product",
+                      controller: _productSearchController,
+                      key: _searchTextKey,
+                      minStringLength: 0,
+                      itemsInView: 5,
+                      future: () { return _autoSuggest.getProductResults();},
+                      getSelectedValue: (item) async {
+                        if (item is ProductItem) {
+                          _productSearchController.text = item.label;
+                          FocusManager.instance.primaryFocus?.unfocus();
+                        }
                       },
                     ),
                     const SizedBox(height: 16),

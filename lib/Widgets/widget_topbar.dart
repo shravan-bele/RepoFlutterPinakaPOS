@@ -18,7 +18,7 @@ class TopBar extends StatelessWidget {
       child: Row(
         children: [
           SvgPicture.asset(
-            'assets/svg/app_logo.svg',
+            'assets/svg/app_icon.svg',
             height: 40,
             width: 40,
           ),

@@ -37,6 +37,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   bool isLoading = true; // Add a loading state
 
   String _selectedStatusFilter = "All";
+  String _selectedUserFilter = "User1";
   String _selectedCurrencyFilter = "All";
   late double _minSalesAmount;
   late double _maxSalesAmount;
@@ -317,6 +318,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     setState(() {
       _selectedStatusFilter = "All";
       _selectedCurrencyFilter = "All";
+      _selectedUserFilter = "User1";
       _salesAmountRange = RangeValues(_minSalesAmount, _maxSalesAmount);
       // _minController.text = _minSalesAmount.toString();
       // _maxController.text = _maxSalesAmount.toString();
@@ -411,6 +413,20 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         spacing: 8.0,
                         children: [
                           FilterChipWidget(
+                            label: "Status: $_selectedUserFilter",
+                            options: const [
+                              "User1",
+                              "User2",
+                              "User3",
+                            ],
+                            selectedValue: _selectedUserFilter,
+                            onSelected: (value) {
+                              setState(() {
+                                _selectedUserFilter = value;
+                              });
+                            },
+                          ),
+                          FilterChipWidget(
                             label: "Status: $_selectedStatusFilter",
                             options: const [
                               "All",
@@ -465,9 +481,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             padding: EdgeInsets.symmetric(horizontal: 4),
                             //alignment: Alignment.center,
                             child: ChoiceChip(
+                              shape:RoundedRectangleBorder(side: BorderSide(color: Colors.black),borderRadius: BorderRadius.all(Radius.circular(10.0))),
                               visualDensity: VisualDensity.compact, // Reduces unwanted padding
                               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                               label: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -526,90 +543,198 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         child: SingleChildScrollView(
                           scrollDirection: Axis.vertical,
                           physics: BouncingScrollPhysics(),
-                          child: DataTable(
-                            headingRowColor: WidgetStateColor.resolveWith(
-                                (states) => Colors.grey.shade200),
-                            columns: <DataColumn>[
-                              //DataColumn(label: Text('ID')),
-                              _buildSortableColumn('ID', 'id'),
-                              //DataColumn(label: Text('Date')),
-                              _buildSortableColumn('Date', 'date'),
-                              DataColumn(label: Text('Duration')),
-                              DataColumn(label: Text('Start Time')),
-                              DataColumn(label: Text('End Time')),
-                              //DataColumn(label: Text('Sales Amount')),
-                              _buildSortableColumn(
-                                  'Sales Amount', 'sales_amount'),
-                              DataColumn(label: Text('Over/Short')),
-                              //DataColumn(label: Text('Status')),
-                              _buildSortableColumn('Status', 'status'),
-                              DataColumn(label: Text('')),
-                            ],
-                            rows: filteredData.map((entry) {
-                              return DataRow(
-                                cells: <DataCell>[
-                                  DataCell(Text(entry['id']!)),
-                                  DataCell(Text(entry['date']!)),
-                                  DataCell(Text(entry['duration']!)),
-                                  DataCell(Text(entry['start_time']!)),
-                                  DataCell(Text(entry['end_time']!)),
-                                  DataCell(Text(entry['sales_amount']!)),
-                                  DataCell(Text(entry['over_short']!)),
-                                  DataCell(Text(entry['status']!)),
-                                  DataCell(
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
-                                      children: [
-                                        IconButton(
-                                          icon: Icon(Icons.edit,
-                                              color: Colors.blue),
-                                          onPressed: () {},
-                                        ),
-                                        IconButton(
-                                          icon: Icon(Icons.delete,
-                                              color: Colors.red),
-                                          onPressed: () {
-                                            QuickAlert.show(
-                                              context: context,
-                                              type: QuickAlertType.confirm,
-                                              title: "Are you sure?",
-                                              text:
-                                                  'This action cannot be undone.',
-                                              confirmBtnText: 'Yes, Delete',
-                                              cancelBtnText: 'Cancel',
-                                              barrierDismissible: false,
-                                              confirmBtnColor: Colors.red,
-                                              confirmBtnTextStyle: TextStyle(
-                                                  fontSize: 14,
-                                                  color: Colors.white),
-                                              onConfirmBtnTap: () {
-                                                Navigator.of(context).pop();
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  SnackBar(
-                                                      content: Text(
-                                                          "Item deleted successfully")),
-                                                );
-                                              },
-                                              onCancelBtnTap: () {
-                                                Navigator.of(context).pop();
-                                              },
-                                            );
-                                          },
-                                        ),
-                                      ],
-                                    ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Table Header
+                              Container(
+                                padding: EdgeInsets.only(left: 0.0, top: 8.0, bottom: 8.0),
+                                decoration: BoxDecoration(
+                                  // color: Colors.blue.shade700,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    _buildSortableColumn("ID", 'id'),
+                                    _buildSortableColumn("Date", 'date'),
+                                    _buildHeaderCell("Duration"),
+                                    _buildHeaderCell("Start Time"),
+                                    _buildHeaderCell("End Time"),
+                                    _buildSortableColumn("Sales Amount", 'sales_amount' ),
+                                    _buildHeaderCell("Over/Short"),
+                                    _buildSortableColumn("Status", 'status'),
+                                    _buildHeaderCell(""),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: 10),
+
+                              // Data Rows
+                              ...filteredData.map((entry) => Padding(
+                                padding: EdgeInsets.only(bottom: 8),
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.grey.shade300),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.grey.withOpacity(0.2),
+                                        blurRadius: 4,
+                                        offset: Offset(0, 2),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              );
-                            }).toList(),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    children: [
+                                      _buildDataCell(entry['id']!),
+                                      _buildDataCell(entry['date']!),
+                                      _buildDataCell(entry['duration']!),
+                                      _buildDataCell(entry['start_time']!),
+                                      _buildDataCell(entry['end_time']!),
+                                      _buildDataCell(entry['sales_amount']!),
+                                      _buildDataCell(entry['over_short']!),
+                                      _buildDataCell(entry['status']!),
+
+                                      // Action Buttons
+                                      Row(
+                                        children: [
+                                          IconButton(
+                                            icon: Icon(Icons.edit, color: Colors.blue),
+                                            onPressed: () {},
+                                          ),
+                                          IconButton(
+                                            icon: Icon(Icons.delete, color: Colors.red),
+                                            onPressed: () {
+                                              QuickAlert.show(
+                                                width: 350,
+                                                context: context,
+                                                type: QuickAlertType.confirm,
+                                                title: "Are you sure?",
+                                                text: 'This action cannot be undone.',
+                                                confirmBtnText: 'Yes, Delete',
+                                                cancelBtnText: 'Cancel',
+                                                barrierDismissible: false,
+                                                confirmBtnColor: Colors.red,
+                                                confirmBtnTextStyle: TextStyle(fontSize: 14, color: Colors.white),
+                                                onConfirmBtnTap: () {
+                                                  Navigator.of(context).pop();
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(content: Text("Item deleted successfully")),
+                                                  );
+                                                },
+                                                onCancelBtnTap: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                              );
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )),
+                            ],
                           ),
+                          // DataTable(
+                          //   headingRowColor: WidgetStateColor.resolveWith(
+                          //       (states) => Colors.grey.shade200),
+                          //   columns: <DataColumn>[
+                          //     //DataColumn(label: Text('ID')),
+                          //     _buildSortableColumn('ID', 'id'),
+                          //     //DataColumn(label: Text('Date')),
+                          //     _buildSortableColumn('Date', 'date'),
+                          //     DataColumn(label: Text('Duration')),
+                          //     DataColumn(label: Text('Start Time')),
+                          //     DataColumn(label: Text('End Time')),
+                          //     //DataColumn(label: Text('Sales Amount')),
+                          //     _buildSortableColumn('Sales Amount', 'sales_amount' ),
+                          //     DataColumn(label: Text('Over/Short')),
+                          //     //DataColumn(label: Text('Status')),
+                          //     _buildSortableColumn('Status', 'status'),
+                          //     DataColumn(label: Text('')),
+                          //   ],
+                          //     Column(
+                          //       children: filteredData.map((entry) {
+                          //         return Container(
+                          //           margin: EdgeInsets.symmetric(vertical: 4), // Spacing between rows
+                          //           padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12), // Inner padding
+                          //           decoration: BoxDecoration(
+                          //             color: Colors.white, // Row background color
+                          //             borderRadius: BorderRadius.circular(12), // Rounded corners
+                          //             border: Border.all(color: Colors.grey.shade300, width: 1), // Border styling
+                          //             boxShadow: [
+                          //               BoxShadow(
+                          //                 color: Colors.grey.shade200,
+                          //                 blurRadius: 4,
+                          //                 offset: Offset(0, 2), // Soft shadow
+                          //               ),
+                          //             ],
+                          //           ),
+                          //           child: Row(
+                          //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          //             children: [
+                          //               Expanded(child: Text(entry['id']!, textAlign: TextAlign.center)),
+                          //               Expanded(child: Text(entry['date']!, textAlign: TextAlign.center)),
+                          //               Expanded(child: Text(entry['duration']!, textAlign: TextAlign.center)),
+                          //               Expanded(child: Text(entry['start_time']!, textAlign: TextAlign.center)),
+                          //               Expanded(child: Text(entry['end_time']!, textAlign: TextAlign.center)),
+                          //               Expanded(child: Text(entry['sales_amount']!, textAlign: TextAlign.center)),
+                          //               Expanded(child: Text(entry['over_short']!, textAlign: TextAlign.center)),
+                          //               Expanded(child: Text(entry['status']!, textAlign: TextAlign.center)),
+                          //               Expanded(
+                          //                 child: Row(
+                          //                   mainAxisAlignment: MainAxisAlignment.center,
+                          //                   children: [
+                          //                     IconButton(
+                          //                       icon: Icon(Icons.edit, color: Colors.blue),
+                          //                       onPressed: () {},
+                          //                     ),
+                          //                     IconButton(
+                          //                       icon: Icon(Icons.delete, color: Colors.red),
+                          //                       onPressed: () {
+                          //                         QuickAlert.show(
+                          //                           context: context,
+                          //                           type: QuickAlertType.confirm,
+                          //                           title: "Are you sure?",
+                          //                           text: 'This action cannot be undone.',
+                          //                           confirmBtnText: 'Yes, Delete',
+                          //                           cancelBtnText: 'Cancel',
+                          //                           barrierDismissible: false,
+                          //                           confirmBtnColor: Colors.red,
+                          //                           confirmBtnTextStyle: TextStyle(fontSize: 14, color: Colors.white),
+                          //                           onConfirmBtnTap: () {
+                          //                             Navigator.of(context).pop();
+                          //                             ScaffoldMessenger.of(context).showSnackBar(
+                          //                               SnackBar(content: Text("Item deleted successfully")),
+                          //                             );
+                          //                           },
+                          //                           onCancelBtnTap: () {
+                          //                             Navigator.of(context).pop();
+                          //                           },
+                          //                         );
+                          //                       },
+                          //                     ),
+                          //                   ],
+                          //                 ),
+                          //               ),
+                          //             ],
+                          //           ),
+                          //         );
+                          //       }).toList(),
+                          //     ),
+                          // ),
                         ),
                       ),
                     ),
                   ],
                 )),
+
                 // Order Panel on the Right (Conditional: Only when sidebar is left or bottom with right order panel)
                 if (sidebarPosition != SidebarPosition.right &&
                     !(sidebarPosition == SidebarPosition.bottom &&
@@ -653,30 +778,101 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-  DataColumn _buildSortableColumn(String label, String columnKey) {
-    return DataColumn(
-        label: GestureDetector(
-      onTap: () {
-        _sortData(columnKey);
-      },
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(label),
-          if (_sortColumn == columnKey)
-            Icon(
-              _isAscending ? Icons.arrow_upward : Icons.arrow_downward,
-              color: Colors.blue, // Highlight active sorting
-              size: 16,
-            )
-          else
-            Icon(
-              Icons.unfold_more, // Default inactive state
-              color: Colors.grey,
-              size: 16,
-            )
-        ],
+  // DataColumn _buildSortableColumn(String label, String columnKey) {
+  //   return DataColumn(
+  //       label: GestureDetector(
+  //     onTap: () {
+  //       _sortData(columnKey);
+  //     },
+  //     child: Row(
+  //       mainAxisSize: MainAxisSize.min,
+  //       children: [
+  //         Text(label),
+  //         if (_sortColumn == columnKey)
+  //           Icon(
+  //             _isAscending ? Icons.arrow_upward : Icons.arrow_downward,
+  //             color: Colors.blue, // Highlight active sorting
+  //             size: 16,
+  //           )
+  //         else
+  //           Icon(
+  //             Icons.unfold_more, // Default inactive state
+  //             color: Colors.grey,
+  //             size: 16,
+  //           )
+  //       ],
+  //     ),
+  //   ));
+  // }
+
+  _buildSortableColumn(String label, String columnKey) {
+    return SizedBox(
+      width: 120,
+      child: Padding(padding: EdgeInsets.symmetric(vertical: 0.0, horizontal: 4.0), child: InkWell(
+        onTap: () {
+          _sortData(columnKey);
+        },
+        child: Row(
+          //mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(label,
+              style: TextStyle(
+                color: Colors.grey,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,),
+            if(_sortColumn == columnKey)
+              Icon(
+                _isAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                color: Colors.blue, // Highlight active sorting
+                size: 16,
+              )
+            else
+              Icon(
+                Icons.unfold_more, // Default inactive state
+                color: Colors.grey,
+                size: 16,
+              )
+          ],
+        ),
+      )),
+    );
+  }
+
+// Helper Functions
+  Widget _buildHeaderCell(String text) {
+    return SizedBox(
+      width: 120, // Fixed width to avoid flex issues
+      //padding: EdgeInsets.all(8),
+      //alignment: Alignment.center,
+      child: Text(
+        text,
+        style: TextStyle(
+          color: Colors.grey,
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
+        textAlign: TextAlign.center,
       ),
-    ));
+    );
+  }
+
+  Widget _buildDataCell(String text) {
+    return SizedBox(
+        width: 120,
+        child: Padding(padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+          child: Text(
+            text,
+            style: TextStyle(
+              color: Colors.black87,
+              fontSize: 14,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        )
+
+    );
   }
 }

@@ -5,6 +5,7 @@ class AppConstants {
   static const String searchHint = 'Search category or menu...';
 
   static const String appLogo = 'assets/svg/app_logo.svg';
+  static const String appIcon = 'assets/svg/app_icon.svg';
   static const String passwordPlaceholder = 'assets/svg/password_placeholder.svg';
   static const String passwordPlaceholderFill = 'assets/svg/password_placeholder_fill.svg';
 

@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:pinaka_pos/Screens/Home/categories_screen.dart';
 import 'package:pinaka_pos/Screens/Home/fast_key_screen.dart';
 import 'package:pinaka_pos/Screens/Home/orders_screen.dart';
+import 'package:pinaka_pos/Widgets/widget_logout_dialog.dart';
+import 'package:quickalert/models/quickalert_animtype.dart';
+import 'package:quickalert/models/quickalert_type.dart';
+import 'package:quickalert/widgets/quickalert_dialog.dart';
 
 import '../Constants/text.dart';
 import '../Screens/Home/settings_screen.dart';
@@ -61,7 +65,7 @@ class NavigationBar extends StatelessWidget {
               onSidebarItemSelected(0);
 
               /// FastKeyScreen
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => FastKeyScreen(lastSelectedIndex: lastSelectedIndex)),
               );
@@ -80,7 +84,7 @@ class NavigationBar extends StatelessWidget {
               onSidebarItemSelected(1);
 
               /// CategoriesScreen
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => CategoriesScreen( lastSelectedIndex: lastSelectedIndex)),
               );
@@ -106,7 +110,7 @@ class NavigationBar extends StatelessWidget {
               onSidebarItemSelected(3);
 
               /// OrdersScreen
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => OrdersScreen(lastSelectedIndex: lastSelectedIndex)),
               );
@@ -155,7 +159,60 @@ class NavigationBar extends StatelessWidget {
               icon: Icons.logout,
               label: TextConstants.logoutText,
               isSelected: selectedSidebarIndex == 6,
-              onTap: () => onSidebarItemSelected(6),
+              onTap: () {
+                onSidebarItemSelected(6);
+                ///add a stateless widget to show logout popup dialog
+                print("nav logout called");
+
+                QuickAlert.show(
+                  context: context,
+                  type: QuickAlertType.custom,
+                  showCancelBtn: true,
+                  showConfirmBtn: true,
+                  title: 'Logout',
+                  width: 450,
+                  text: 'Do you want to?',
+                  confirmBtnText: 'Logout',
+                  cancelBtnText: 'Cancel',
+                  headerBackgroundColor: const Color(0xFF2CD9C5),
+                  confirmBtnColor: Colors.blue,
+                  confirmBtnTextStyle: const TextStyle(color: Colors.white, fontSize: 16),
+                  cancelBtnTextStyle: const TextStyle(color: Colors.grey, fontSize: 16),
+                  customAsset: null,
+                  animType: QuickAlertAnimType.scale,
+                  barrierDismissible: false,
+
+                  // Widget for the Close Shift button
+                  widget: Padding(
+                    padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        /// close shift
+                        Navigator.of(context).pop();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                      ),
+                      child: const Text(
+                        'Close Shift',
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                    ),
+                  ),
+                  onConfirmBtnTap: () {
+                    /// logout function
+                    Navigator.of(context).pop();
+                  },
+                  onCancelBtnTap: () {
+                    /// cancel
+                    Navigator.of(context).pop();
+                  },
+                );
+              },
               isVertical: isVertical,
             ),
             const SizedBox(height: 10),
@@ -205,7 +262,7 @@ class NavigationBar extends StatelessWidget {
               onSidebarItemSelected(0);
 
               /// FastKeyScreen
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => FastKeyScreen(lastSelectedIndex: lastSelectedIndex)),
               );
@@ -224,7 +281,7 @@ class NavigationBar extends StatelessWidget {
               onSidebarItemSelected(1);
 
               /// CategoriesScreen
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => CategoriesScreen(lastSelectedIndex: lastSelectedIndex)),
               );
@@ -250,7 +307,7 @@ class NavigationBar extends StatelessWidget {
               onSidebarItemSelected(3);
 
               /// OrdersScreen
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => OrdersScreen(lastSelectedIndex: lastSelectedIndex)),
               );
@@ -282,7 +339,7 @@ class NavigationBar extends StatelessWidget {
 
               onSidebarItemSelected(5); // Highlight settings
 
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
                   builder: (context) => SettingsScreen(),
