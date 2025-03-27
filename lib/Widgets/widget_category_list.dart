@@ -6,6 +6,7 @@ import 'dart:io';
 import '../Constants/text.dart';
 import '../Database/db_helper.dart';
 import '../Database/fast_key_db_helper.dart';
+import '../Database/user_db_helper.dart';
 import '../Helper/file_helper.dart';
 import '../Models/Auth/login_model.dart';
 import '../Models/FastKey/category_model.dart';
@@ -47,7 +48,7 @@ class _CategoryListState extends State<CategoryList> {
       });
     });
 
-    getUserId();
+    getUserIdFromDB();
     widget.fastKeyTabIdNotifier.addListener(_onTabChanged); // Listen to tab changes
   }
 
@@ -80,15 +81,15 @@ class _CategoryListState extends State<CategoryList> {
     }
   }
 
-  Future<void> getUserId() async { // Build #1.0.11
+  Future<void> getUserIdFromDB() async { // Build #1.0.13 : now user data loads from user table DB
     try {
-      final LoginResponse? response = await FileHelper.readLoginResponse();
+      final userData = await UserDbHelper().getUserData();
 
-      if (response != null) {
-        userId = response.id; // Assuming `id` is a property in `LoginResponse`
+      if (userData != null && userData[AppDBConst.userId] != null) {
+        userId = userData[AppDBConst.userId] as int; // Fetching user ID from DB
 
         if (kDebugMode) {
-          print("#### userId: $userId");
+          print("#### userId from DB: $userId");
         }
 
         // Load FastKey tabs from the database
@@ -96,7 +97,7 @@ class _CategoryListState extends State<CategoryList> {
         await _loadLastSelectedTab(); // Now load the last selected tab
       } else {
         if (kDebugMode) {
-          print("No user ID found in login response.");
+          print("No user ID found in the database.");
         }
       }
     } catch (e) {
@@ -521,11 +522,14 @@ class _CategoryListState extends State<CategoryList> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: IconButton(
-              icon: const Icon(Icons.add, color: Colors.redAccent),
-              onPressed: () {
-                _showCategoryDialog();
-              },
+            child: SizedBox( // Build #1.0.13 : tried to fix render flex issue for "+" button in category screen
+              width: double.infinity, // Take full width of container
+              child: IconButton(
+                icon: const Icon(Icons.add, color: Colors.redAccent),
+                onPressed: () {
+                  _showCategoryDialog();
+                },
+              ),
             ),
           ),
         ],
@@ -554,7 +558,7 @@ class _CategoryListState extends State<CategoryList> {
     bool isEditing = index != null;
     TextEditingController nameController =
     TextEditingController(text: isEditing ? fastKeyProducts[index].name : '');
-    String imagePath = isEditing ? fastKeyProducts[index].imageAsset : 'assets/svg/password_placeholder.svg'; // Default image path
+    String imagePath = isEditing ? fastKeyProducts[index].imageAsset : 'assets/default.png'; // Build #1.0.13 : changed to default image path
     bool showError = false;
 
     showDialog(

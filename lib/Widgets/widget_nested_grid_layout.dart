@@ -7,11 +7,15 @@ import 'package:image_picker/image_picker.dart';
 import 'package:pinaka_pos/Utilities/textfield_search.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 
+import '../Blocs/Search/product_search_bloc.dart';
 import '../Constants/text.dart';
 import '../Database/db_helper.dart';
 import '../Database/fast_key_db_helper.dart';
 import '../Database/order_panel_db_helper.dart';
 import '../Helper/auto_search.dart';
+import '../Helper/api_response.dart';
+import '../Models/Search/product_search_model.dart';
+import '../Repositories/Search/product_search_repository.dart';
 import '../Utilities/shimmer_effect.dart';
 
 class NestedGridWidget extends StatefulWidget {
@@ -203,12 +207,15 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
         print("Selected Product: $selectedProduct");
       }
 
+      // Generate a unique key for each item to prevent merging
+    //  final uniqueKey = DateTime.now().millisecondsSinceEpoch.toString();
+
       await orderHelper.addItemToOrder(
         selectedProduct["fast_key_item_name"],
         selectedProduct["fast_key_item_image"],
         selectedProduct["fast_key_item_price"],
-        1,
-        'SKU$index',
+        1, // Default quantity
+        'SKU${selectedProduct["fast_key_item_name"]}', // Build #1.0.13 : Fix - Fast key tab item issue
         onItemAdded: widget.onItemAdded,
       );
 
@@ -241,29 +248,26 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
     await _deleteFastKeyTabItem(itemId);
   }
 
-  Future<void> searchProducts(String query, StateSetter setStateDialog) async { // Build #1.0.11
+  // Replace the existing searchProducts method with this:
+  Future<void> searchProducts(String query, StateSetter setStateDialog) async {
     if (query.isEmpty) {
       setStateDialog(() {
         searchResults.clear();
       });
       return;
     }
-
-    setStateDialog(() {
-      searchResults = nestedItems.expand((list) => list).where((item) {
-        return item["title"].toLowerCase().contains(query.toLowerCase());
-      }).toList();
-    });
-
-    if (kDebugMode) {
-      print("Search Results: $searchResults");
-    }
+    // This is now handled by the ProductBloc in the StreamBuilder
+    // So we don't need to manually set searchResults here
   }
 
+  // Update the _showAddItemDialog method in NestedGridWidget
   Future<void> _showAddItemDialog(int listIndex) async {
     searchController.clear(); // Clear the search text
     selectedProduct = null; // Reset the selected product
     searchResults.clear(); // Clear previous search results
+
+    // Initialize ProductBloc
+    final productBloc = ProductBloc(ProductRepository());
 
     return showDialog<void>(
       context: context,
@@ -284,7 +288,8 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                         hintText: TextConstants.typeSearchText,
                       ),
                       onChanged: (value) {
-                        searchProducts(value, setStateDialog);
+                        // Call fetchProducts with search query
+                        productBloc.fetchProducts(searchQuery: value);
                       },
                     ),
                     TextFieldSearch(
@@ -302,38 +307,69 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                       },
                     ),
                     const SizedBox(height: 16),
-                    if (searchResults.isNotEmpty)
-                      SizedBox(
-                        height: 200,
-                        child: ListView.builder(
-                          shrinkWrap: true,
-                          physics: BouncingScrollPhysics(),
-                          itemCount: searchResults.length,
-                          itemBuilder: (context, index) {
-                            final product = searchResults[index];
-                            return ListTile(
-                              leading: product['image'] != null
-                                  ? Image.network(
-                                product['image'],
-                                width: 50,
-                                height: 50,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => Icon(Icons.broken_image),
-                              )
-                                  : Icon(Icons.image),
-                              title: Text(product['title']),
-                              subtitle: Text(product['price']),
-                              onTap: () {
-                                setStateDialog(() {
-                                  selectedProduct = product;
-                                });
-                              },
-                              selected: selectedProduct == product,
-                              selectedTileColor: Colors.grey[300],
-                            );
-                          },
-                        ),
-                      )
+                    StreamBuilder<APIResponse<List<ProductResponse>>>( // Build #1.0.13 : auto search for product item in alert when tap on add item in grid
+                      stream: productBloc.productStream,
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          switch (snapshot.data!.status) {
+                            case Status.LOADING:
+                              return const Center(child: CircularProgressIndicator());
+                            case Status.COMPLETED:
+                              final products = snapshot.data!.data;
+                              if (products == null || products.isEmpty) {
+                                return const Center(child: Text("No products found"));
+                              }
+
+                              return SizedBox(
+                                height: 200,
+                                child: ListView.builder(
+                                  shrinkWrap: true,
+                                  physics: const BouncingScrollPhysics(),
+                                  itemCount: products.length,
+                                  itemBuilder: (context, index) {
+                                    final product = products[index];
+                                    return ListTile(
+                                      leading: product.images != null && product.images!.isNotEmpty
+                                          ? Image.network(
+                                        product.images!.first,
+                                        width: 50,
+                                        height: 50,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) =>
+                                        const Icon(Icons.broken_image),
+                                      )
+                                          : const Icon(Icons.image),
+                                      title: Text(product.name ?? 'No Name'),
+                                      subtitle: Text('\$${product.price ?? '0.00'}'),
+                                      onTap: () {
+                                        setStateDialog(() {
+                                          selectedProduct = {
+                                            'title': product.name ?? 'Unknown',
+                                            'image': product.images?.isNotEmpty == true
+                                                ? product.images!.first
+                                                : '',
+                                            'price': product.regularPrice ?? '0.00',
+                                            'id': product.id,
+                                          };
+                                        });
+                                      },
+                                      selected: selectedProduct != null &&
+                                          selectedProduct!['id'] == product.id,
+                                      selectedTileColor: Colors.grey[300],
+                                    );
+                                  },
+                                ),
+                              );
+                            case Status.ERROR:
+                              print("BIG ERROR");
+                              return Center(
+                                child: Text(snapshot.data!.message ?? "Error loading products"),
+                              );
+                          }
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -341,6 +377,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
             actions: <Widget>[
               TextButton(
                 onPressed: () {
+                  productBloc.dispose();
                   Navigator.of(context).pop();
                 },
                 child: const Text(TextConstants.cancelText),
@@ -348,24 +385,22 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
               TextButton(
                 onPressed: selectedProduct != null ? () async {
                   if (kDebugMode) {
-                    print("### onPressed:2 _fastKeyTabId - $_fastKeyTabId");
+                    print("Adding product: $selectedProduct");
                   }
                   if (_fastKeyTabId != null) {
                     await _addFastKeyTabItem(
                       selectedProduct!['title'],
                       selectedProduct!['image'],
-                      double.parse(selectedProduct!['price'].replaceAll('\$', '')),
+                      double.tryParse(selectedProduct!['price']) ?? 0.0,
                     );
-                    if (kDebugMode) {
-                      print("### onPressed: _fastKeyTabId - $_fastKeyTabId, fastKeyProductItems.length: ${fastKeyProductItems.length}");
-                    }
 
-                    await fastKeyHelper.updateFastKeyTabCount(_fastKeyTabId!, fastKeyProductItems.length);
+                    await fastKeyHelper.updateFastKeyTabCount(
+                      _fastKeyTabId!,
+                      fastKeyProductItems.length,
+                    );
 
-                    // Load items first
                     await _loadFastKeyTabItems();
 
-                    // Call setState synchronously
                     if (mounted) {
                       setState(() {});
                     }
@@ -373,10 +408,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                     widget.fastKeyTabIdNotifier?.notifyListeners();
                   }
 
-                  if (kDebugMode) {
-                    print("#### _fastKeyTabId: $_fastKeyTabId");
-                  }
-
+                  productBloc.dispose();
                   Navigator.of(context).pop();
                 } : null,
                 child: const Text(TextConstants.addText),
@@ -385,7 +417,9 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
           );
         });
       },
-    );
+    ).then((_) {
+      productBloc.dispose();
+    });
   }
 
   Widget _buildImage(String imagePath) {

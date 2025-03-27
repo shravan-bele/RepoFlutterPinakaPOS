@@ -4,6 +4,8 @@ import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
 import '../../Constants/text.dart';
+import '../../Database/db_helper.dart';
+import '../../Database/user_db_helper.dart';
 import '../../Helper/Extentions/theme_notifier.dart';
 import '../../Preferences/pinaka_preferences.dart';
 
@@ -38,12 +40,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    nameController.text = "Unknown Name";
-    contactNoController.text = "+9101234567891";
-    emailController.text = "test@pinaka.com";
-    deviceIdController.text = "4C4C4544-005A-3310-8043-B3C04F334733";
-
+    _loadUserDataFromDB();
     _loadAppThemeMode(); // Appearance light/dark/system
+  }
+
+  Future<void> _loadUserDataFromDB() async { // Build #1.0.13 : now user data loads from user table DB
+    try {
+      final userData = await UserDbHelper().getUserData();
+
+      if (userData != null) {
+        nameController.text       = userData[AppDBConst.userDisplayName] ?? "Unknown Name";
+        contactNoController.text  = "+9101234567891";
+        emailController.text      = userData[AppDBConst.userEmail] ?? "test@pinaka.com";
+        deviceIdController.text   = "4C4C4544-005A-3310-8043-B3C04F334733";
+
+        if (kDebugMode) {
+          print("#### Loaded user data into controllers: $userData");
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error loading user data: $e");
+      }
+    }
   }
 
   Future<void> _loadAppThemeMode() async { // Build #1.0.9 : By default dark theme getting selected on launch even after changing from settings
