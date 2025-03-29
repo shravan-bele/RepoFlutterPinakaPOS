@@ -55,6 +55,7 @@ class UrlHelper {
 class UrlMethodConstants { // Build #1.0.13
   static const String token          = "token";
   static const String products       = "products";
+  static const String fastKeys       = "fastkeys";  // Build #1.0.15
 }
 
 class UrlParameterConstants { // Build #1.0.13
@@ -64,5 +65,9 @@ class UrlParameterConstants { // Build #1.0.13
 
 class EndUrlConstants { // Build #1.0.13
   static const  String productSearchEndUrl = "&page=1&limit=10";
+  static const  String createFastKeyEndUrl        = "/create";  // Build #1.0.15
+  static const  String getFastKeyEndUrl           = "/get-by-user";
+  static const  String addFastKeyProductEndUrl    = "/add-products";
+  static const  String getFastKeyProductsEndUrl   = "/get-by-fastkey-id/";
 }
 

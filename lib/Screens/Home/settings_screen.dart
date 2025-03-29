@@ -385,15 +385,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildAppearanceOption(TextConstants.systemText, themeManager),
           ],
         ),
-        Text(TextConstants.selectKeyboardText,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-        Row(
-          children: [
-            _buildRadioOption(TextConstants.virtualText),
-            _buildRadioOption(TextConstants.systemText),
-            _buildRadioOption(TextConstants.bothText),
-          ],
-        ),
+        // Text(TextConstants.selectKeyboardText, // Build #1.0.15 : removed Keyboard type UI
+        //     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+        // Row(
+        //   children: [
+        //     _buildRadioOption(TextConstants.virtualText),
+        //     _buildRadioOption(TextConstants.systemText),
+        //     _buildRadioOption(TextConstants.bothText),
+        //   ],
+        // ),
         _buildSwitchOption(TextConstants.quickProAddText, quickProductAdd, (value) {
           setState(() => quickProductAdd = value);
         }),
