@@ -44,7 +44,7 @@ class Loading extends StatelessWidget { // Build #1.0.8, Naveen added
                   child: CircularProgressIndicator(
                     strokeWidth: strokeWidth ?? 1.5,
                     // color: textColor,// no use, it is always override by theme color
-                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.blueGrey), // Build #1.0.16
                   ),
                 ),
 
