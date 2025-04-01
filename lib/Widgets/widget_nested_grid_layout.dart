@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:pinaka_pos/Models/FastKey/fastkey_product_model.dart';
 import 'package:pinaka_pos/Utilities/textfield_search.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 
@@ -17,6 +18,8 @@ import '../Helper/api_response.dart';
 import '../Models/Search/product_search_model.dart';
 import '../Repositories/Search/product_search_repository.dart';
 import '../Utilities/shimmer_effect.dart';
+import 'package:pinaka_pos/Blocs/FastKey/fastkey_product_bloc.dart';
+import 'package:pinaka_pos/Repositories/FastKey/fastkey_product_repository.dart';
 
 class NestedGridWidget extends StatefulWidget {
   final bool isHorizontal;
@@ -62,7 +65,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
   File? _pickedImage;
   final ImagePicker _picker = ImagePicker();
   final OrderHelper orderHelper = OrderHelper();
-  final FastKeyHelper fastKeyHelper = FastKeyHelper();
+  final FastKeyDBHelper fastKeyDBHelper = FastKeyDBHelper();
   final DBHelper dbHelper = DBHelper.instance;
 
   List<Map<String, dynamic>> fastKeyProductItems = [];
@@ -71,12 +74,14 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
   Map<String, dynamic>? selectedProduct;
 
   TextEditingController _productSearchController = TextEditingController();
-  final _searchTextKey = GlobalKey<TextFieldSearchState>();
+  final _searchTextGridKey = GlobalKey<TextFieldSearchState>();
   late SearchProduct _autoSuggest;
+  late FastKeyProductBloc _fastKeyProductBloc;
 
   @override
   void initState() {
     super.initState();
+    _fastKeyProductBloc = FastKeyProductBloc(FastKeyProductRepository());
     reorderedIndices = List.filled(fastKeyProductItems.length, null);
     _loadActiveFastKeyTabId().then((_) { // Build #1.0.12: fixed fast key tab related issues
       widget.fastKeyTabIdNotifier.addListener(_onTabChanged);
@@ -87,7 +92,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
 
   _listenProductItemSearch(){
     if(_productSearchController.text.isEmpty) {
-      _searchTextKey.currentState?.resetList();
+      _searchTextGridKey.currentState?.resetList();
     }
     _autoSuggest.listentextchange(_productSearchController.text ?? "");
   }
@@ -106,7 +111,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
     setState(() {
       _fastKeyTabId = widget.fastKeyTabIdNotifier.value;
     });
-    fastKeyHelper.saveActiveFastKeyTab(_fastKeyTabId); // Save the active tab ID
+    fastKeyDBHelper.saveActiveFastKeyTab(_fastKeyTabId); // Save the active tab ID
     _loadFastKeyTabItems(); // Reload items when the tab changes
   }
 
@@ -117,7 +122,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
   }
 
   Future<void> _loadActiveFastKeyTabId() async {
-    final lastSelectedTabId = await fastKeyHelper.getActiveFastKeyTab();
+    final lastSelectedTabId = await fastKeyDBHelper.getActiveFastKeyTab();
     if (kDebugMode) {
       print("### _loadActiveFastKeyTabId: Last Selected Tab ID: $lastSelectedTabId");
     }
@@ -137,11 +142,24 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
       }
       return;
     }
-    final items = await fastKeyHelper.getFastKeyItems(_fastKeyTabId!);
-    setState(() {
-      fastKeyProductItems = List<Map<String, dynamic>>.from(items);
-      reorderedIndices = List.filled(fastKeyProductItems.length, null); // Resize reorderedIndices
+
+    ///1. Get the active fastkey server id from _fastKeyTabId
+    var tabs = await fastKeyDBHelper.getFastKeyTabsByTabId(_fastKeyTabId ?? 1);
+    if(tabs.length == 0){
+      return;
+    }
+    var fastKeyServerId = tabs.first[AppDBConst.fastKeyServerId];
+    ///2. call 'Get Fast Key products by Fast Key ID' API
+
+    await _fastKeyProductBloc.fetchProductsByFastKeyId(_fastKeyTabId ?? 1, fastKeyServerId).whenComplete(() async {
+      ///3. load products from API into DB
+      final items = await fastKeyDBHelper.getFastKeyItems(_fastKeyTabId!);
+      setState(() {
+        fastKeyProductItems = List<Map<String, dynamic>>.from(items);
+        reorderedIndices = List.filled(fastKeyProductItems.length, null); // Resize reorderedIndices
+      });
     });
+
   }
 
   Future<void> _addFastKeyTabItem(String name, String image, double price) async {
@@ -155,10 +173,28 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
       print("### _addFastKeyTabItem _fastKeyTabId: $_fastKeyTabId");
     }
 
-    await fastKeyHelper.addFastKeyItem(_fastKeyTabId!, name, image, price);
+    ///Add a logic to add to API then push to DB and final load from DB
+    ///1. get fastkey_server_id from DB and use for step 2
+    var tabs = await fastKeyDBHelper.getFastKeyTabsByTabId(_fastKeyTabId ?? 1);
+    if(tabs.length == 0){
+      return;
+    }
+    var fastKeyServerId = tabs.first[AppDBConst.fastKeyServerId];
+
+    ///2. get list of products in this tab
+    var productsInFastKey = await fastKeyDBHelper.getFastKeyItems(_fastKeyTabId ?? 1);
+    var countProductInFastKey = productsInFastKey.length;
+
+    ///3. create a FastKeyProductItem and pass to add product
+    FastKeyProductItem item = FastKeyProductItem(productId: selectedProduct!['id'], slNumber: countProductInFastKey+1);
+    ///4. call add fast keys product API
+    _fastKeyProductBloc.addProducts(fastKeyId: fastKeyServerId, products: [item]);
+
+    ///5. save to DB along with productid and index
+    await fastKeyDBHelper.addFastKeyItem(_fastKeyTabId!, name, image, price);
 
     // Increase count manually before reloading
-    await fastKeyHelper.updateFastKeyTabCount(_fastKeyTabId!, fastKeyProductItems.length + 1);
+    await fastKeyDBHelper.updateFastKeyTabCount(_fastKeyTabId!, fastKeyProductItems.length + 1);
 
     await _loadFastKeyTabItems(); // Reload items after adding
     // Call setState synchronously after all async operations
@@ -171,9 +207,9 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
   Future<void> _deleteFastKeyTabItem(int fastKeyTabItemId) async { // Build #1.0.11
     if (_fastKeyTabId == null) return;
 
-    await fastKeyHelper.deleteFastKeyItem(fastKeyTabItemId);
+    await fastKeyDBHelper.deleteFastKeyItem(fastKeyTabItemId);
     await _loadFastKeyTabItems(); // Reload items after deleting
-    await fastKeyHelper.updateFastKeyTabCount(_fastKeyTabId!, fastKeyProductItems.length);
+    await fastKeyDBHelper.updateFastKeyTabCount(_fastKeyTabId!, fastKeyProductItems.length);
 
     // Call setState synchronously after all async operations
     if (mounted) {
@@ -295,13 +331,25 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                     TextFieldSearch(
                       label: "Search Product",
                       controller: _productSearchController,
-                      key: _searchTextKey,
+                      key: _searchTextGridKey,
                       minStringLength: 0,
                       itemsInView: 5,
                       future: () { return _autoSuggest.getProductResults();},
                       getSelectedValue: (item) async {
                         if (item is ProductItem) {
                           _productSearchController.text = item.label;
+                          var product = item.value;
+                          setStateDialog((){
+                            selectedProduct = {
+                              'title': product.name ?? 'Unknown',
+                              'image': product.images?.isNotEmpty == true
+                                  ? product.images!.first
+                                  : '',
+                              'price': product.regularPrice ?? '0.00',
+                              'id': product.id,
+                            };
+                          });
+
                           FocusManager.instance.primaryFocus?.unfocus();
                         }
                       },
@@ -394,7 +442,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                       double.tryParse(selectedProduct!['price']) ?? 0.0,
                     );
 
-                    await fastKeyHelper.updateFastKeyTabCount(
+                    await fastKeyDBHelper.updateFastKeyTabCount(
                       _fastKeyTabId!,
                       fastKeyProductItems.length,
                     );
@@ -408,6 +456,7 @@ class _NestedGridWidgetState extends State<NestedGridWidget> {
                     widget.fastKeyTabIdNotifier?.notifyListeners();
                   }
 
+                  _productSearchController.text = "";
                   productBloc.dispose();
                   Navigator.of(context).pop();
                 } : null,

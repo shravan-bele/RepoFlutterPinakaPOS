@@ -1,5 +1,10 @@
 
 import 'package:flutter/foundation.dart';
+import '../Repositories/Search/product_search_repository.dart';
+import '../Models/Search/product_search_model.dart';
+import '../Blocs/Search/product_search_bloc.dart';
+import '../Constants/text.dart';
+import 'api_response.dart';
 
 
 // Mock Test Item Class
@@ -15,7 +20,7 @@ class ProductItem {
 }
 
 class SearchProduct {
-
+  final _productBloc = ProductBloc(ProductRepository());
   List _productList = <dynamic>[];
   List get productList => _productList;
   bool isOnline = true;
@@ -33,21 +38,32 @@ class SearchProduct {
 
   Future<List> getProductResults() async {
     await Future.delayed(const Duration(milliseconds: 500));
-    // Search for "Pizza" and show the results on the map.
-    // _searchExample();
-
-    // Search for auto suggestions and log the results to the console.
-    // return _autoSuggestExample();
     if (kDebugMode) {
       print("1 object######################### ${_productList.length} \n");
     }
     return _productList;
   }
-  listentextchange(String text){
-    fetchSimpleData();
+  listentextchange(String text) async {
+    // fetchSimpleData();
    // _autoSuggestExample(text , isChooseOnMapAvailable);
+    _productList.clear();
     if (kDebugMode) {
-      // print("2 object#########################$_placelist \n");
+      print("_fetchProductByText ######################### $text, $_productList \n");
+      _productList.forEach((element) {
+        print("product #########################${element.label} \n");
+      });
+    }
+    if(text.isEmpty){
+      return [];
+    }
+    await _productBloc.fetchProducts(searchQuery: text).whenComplete((){
+      _loadProduct();
+      if (kDebugMode) {
+        print("2 object#########################${_productList.length} \n");
+      }
+    });
+    if (kDebugMode) {
+      print("3 object#########################${_productList.length} \n");
     }
   }
 
@@ -56,6 +72,44 @@ class SearchProduct {
     _productList.clear();
     _productList.add(ProductItem(label: "Milk",value: ""));
     _productList.add(ProductItem(label: "Milk1",value: ""));
+    return _productList;
+  }
+
+  Future<List> _loadProduct() async{
+
+    ///perform search and update the productList
+    _productBloc.productStream.listen((event) async{
+      if (kDebugMode) {
+        print('status: ${event.status}');
+      }
+      if (event.status == Status.ERROR) {
+        if (kDebugMode) {
+          print('auto_search _fetchProductByText: fetch completed with ERROR');
+        }
+        _productBloc.productSink.add(APIResponse.error(TextConstants.retryText));
+        _productBloc.productController.close();
+      } else if (event.status == Status.COMPLETED) { // #Build 1.1.97: Fixed Issue -> subscription screen is coming every first time even user have byPassSubscription is true
+        final products = event.data!;
+        _productList.clear();
+        if (kDebugMode) {
+          print('auto_search _fetchProductByText fetch product completed with product count ${products.length}');
+        }
+        if (products == null || products.isEmpty || products.length == 0) {
+          _productList.add(ProductItem(label: "No products found",value: ""));
+        } else {
+          for (ProductResponse product in products) {
+            _productList.add(ProductItem(label: product.name ?? "Unknown", value: product));
+          }
+        }
+        // if (!_productBloc.productController.isClosed) {
+        //   _productBloc.productSink.add(APIResponse.completed([]));
+        // }
+
+      }
+    },onDone: (){
+
+    });
+
     return _productList;
   }
 

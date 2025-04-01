@@ -4,6 +4,8 @@ import '../../Constants/text.dart';
 import '../../Helper/api_response.dart';
 import '../../Models/FastKey/fastkey_product_model.dart';
 import '../../Repositories/FastKey/fastkey_product_repository.dart';
+import '../../Database/fast_key_db_helper.dart';
+import '../../Database/db_helper.dart';
 
 class FastKeyProductBloc {  // Build #1.0.15
   final FastKeyProductRepository _repository;
@@ -56,16 +58,46 @@ class FastKeyProductBloc {  // Build #1.0.15
   }
 
   // GET: Fetch products by FastKey ID
-  Future<void> fetchProductsByFastKeyId(int fastKeyId) async {
+  Future<void> fetchProductsByFastKeyId(int fastKeyId, int fastKeyServerId) async {
     if (_getProductsController.isClosed) return;
 
     getProductsSink.add(APIResponse.loading(TextConstants.loading));
     try {
-      final response = await _repository.getProductsByFastKeyId(fastKeyId);
+      final response = await _repository.getProductsByFastKeyId(fastKeyServerId);
 
       if (kDebugMode) {
-        print("FastKeyProductBloc - Fetched ${response.products.length} products for FastKey $fastKeyId");
+        print("FastKeyProductBloc - Fetched ${response.products.length} products for FastKey $fastKeyId, FastKeyServer $fastKeyServerId");
       }
+
+      ///insert into DB
+
+      final FastKeyDBHelper fastKeyDBHelper = FastKeyDBHelper();
+      final fastKeyTabs = await fastKeyDBHelper.getFastKeyItems(fastKeyId);
+      if (kDebugMode) {
+        print("#### fastKeyTabs : $fastKeyTabs");
+      }
+      if(fastKeyTabs.length != response.products.length){
+        ///if all the data mismatches then delete all db contents and replace with API response
+        fastKeyDBHelper.deleteAllFastKeyProductItems(fastKeyId);
+        for(var product in response.products){
+          fastKeyDBHelper.addFastKeyItem(fastKeyId, product.name, product.image, double.parse(product.price));
+          ///Naveen: add few paramter as product_id, sl_number, and make price as string only
+        }
+      } else {
+        ///else just update the data for each fast key
+        var i=0;
+        for(var product in response.products){
+          final updatedTab = {
+            AppDBConst.fastKeyItemName: product.name.toString(),
+            AppDBConst.fastKeyItemPrice: product.name.toString(),
+            AppDBConst.fastKeyItemSKU: product.name.toString(),
+            AppDBConst.fastKeyItemImage: product.name.toString()
+            ///Naveen : please update the db with product id and category, sl_number
+          };
+          fastKeyDBHelper.updateFastKeyProductItem(i++, updatedTab);
+        }
+      }
+
       getProductsSink.add(APIResponse.completed(response));
     } catch (e) {
       if (e.toString().contains('SocketException')) {

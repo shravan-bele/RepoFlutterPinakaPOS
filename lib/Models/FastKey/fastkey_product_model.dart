@@ -11,8 +11,8 @@ class FastKeyProductRequest {  // Build #1.0.15
   });
 
   Map<String, dynamic> toJson() => {
-    'fast_key_id': fastKeyId,
-    'fastkey_products': products.map((item) => item.toJson()).toList(),
+    'fastkey_id': fastKeyId,
+    'products': products.map((item) => item.toJson()).toList(),
   };
 }
 

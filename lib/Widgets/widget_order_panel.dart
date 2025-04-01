@@ -58,14 +58,20 @@ class _RightOrderPanelState extends State<RightOrderPanel> with TickerProviderSt
   void _getOrderTabs() async {
     await orderHelper.loadData(); // Load order data from DB
 
-    setState(() {
-      // Convert order IDs into tab format
-      tabs = orderHelper.orderIds.asMap().entries.map((entry) => {
-        "title": "#${entry.value}", // Order number
-        "subtitle": "Tab ${entry.key + 1}", // Tab position
-        "orderId": entry.value as Object, // Order ID
-      }).toList();
-    });
+     if(mounted)   {
+      setState(() {
+        // Convert order IDs into tab format
+        tabs = orderHelper.orderIds
+            .asMap()
+            .entries
+            .map((entry) => {
+                  "title": "#${entry.value}", // Order number
+                  "subtitle": "Tab ${entry.key + 1}", // Tab position
+                  "orderId": entry.value as Object, // Order ID
+                })
+            .toList();
+      });
+    }
 
     _initializeTabController(); // Initialize tab controller
 

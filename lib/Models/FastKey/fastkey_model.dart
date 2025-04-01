@@ -1,13 +1,13 @@
 import 'fastkey_product_model.dart';
 
 // Using for Fast Key Screen Horizontal List Scroll
-class CategoryModel {
+class FastKeyModel {
   late int id; // Build #1.0.11
   late String name; //Build #1.0.4
   late String itemCount;
   late String imageAsset;
 
-  CategoryModel({
+  FastKeyModel({
     required this.id,
     required this.name,
     required this.itemCount,
@@ -109,6 +109,7 @@ class FastKey {
   final String fastkeyTitle;
   final dynamic fastkeyImage; // Can be bool or String
   final String fastkeyIndex;
+  final int itemCount;
 
   FastKey({
     required this.fastkeyId,
@@ -116,6 +117,7 @@ class FastKey {
     required this.fastkeyTitle,
     required this.fastkeyImage,
     required this.fastkeyIndex,
+    required this.itemCount
   });
 
   factory FastKey.fromJson(Map<String, dynamic> json) {
@@ -124,7 +126,8 @@ class FastKey {
       userId: json['user_id'] ?? 0,
       fastkeyTitle: json['fastkey_title'] ?? '',
       fastkeyImage: json['fastkey_image'],
-      fastkeyIndex: json['fastkey_index']?.toString() ?? '0'
+      fastkeyIndex: json['fastkey_index']?.toString() ?? '0',
+      itemCount: json['itemCount'] ?? 0,
     );
   }
 }

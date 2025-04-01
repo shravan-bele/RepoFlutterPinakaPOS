@@ -241,6 +241,7 @@ class APIHelper { // Build #1.0.8, Naveen added
 
     switch (response.statusCode) {
       case 200:
+      case 201:
         return response.body.trim();
       case 400:
         throw BadRequestException(response.body);

@@ -18,7 +18,7 @@ class ThemeNotifier with ChangeNotifier { // Build #1.0.6 - Added Theme code & a
   }
 
   Future<void> _loadThemeMode() async {
-    String? savedTheme = await _preferences.getSavedAppThemeMode();
+    String? savedTheme = await _preferences.getSavedAppThemeMode() ?? ThemeMode.light.toString();
     _themeMode = _mapStringToThemeMode(savedTheme);
     notifyListeners();
   }

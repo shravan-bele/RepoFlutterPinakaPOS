@@ -45,6 +45,7 @@ class AppDBConst { // Build #1.0.10 - Naveen: Updated DB tables constants
   // Build #1.0.11 : FastKey Tabs Table Updated
   static const String fastKeyTable = 'fast_key_tabs';
   static const String fastKeyId = 'fast_key_id';
+  static const String fastKeyServerId = 'fast_key_server_id';
   static const String userIdForeignKey = 'user_id';
   static const String fastKeyTabTitle = 'fast_key_tab_title';
   static const String fastKeyTabImage = 'fast_key_tab_image';
@@ -146,6 +147,7 @@ class DBHelper {
     await db.execute('''
     CREATE TABLE ${AppDBConst.fastKeyTable} (
       ${AppDBConst.fastKeyId} INTEGER PRIMARY KEY AUTOINCREMENT,
+      ${AppDBConst.fastKeyServerId} INTEGER NOT NULL,
       ${AppDBConst.userIdForeignKey} INTEGER NOT NULL,
       ${AppDBConst.fastKeyTabTitle} TEXT NOT NULL,
       ${AppDBConst.fastKeyTabImage} TEXT NOT NULL,

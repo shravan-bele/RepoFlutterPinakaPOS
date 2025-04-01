@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
+import '../Models/Search/product_search_model.dart';
 
 class TextFieldSearch extends StatefulWidget {
   /// A default list of values that can be used for an initial list of elements to select from
@@ -325,9 +326,10 @@ class TextFieldSearchState extends State<TextFieldSearch> {
       controller: _scrollController,
       itemCount: filteredList!.length,
       itemBuilder: (context, i) {
-        List<String> address = [];
+        List<String> listItemTitle = [];
+        ProductResponse product = filteredList![i].value as ProductResponse;
         if(filteredList![i].label is String) {
-          address = (filteredList![i].label as String).split(',');
+          listItemTitle = (filteredList![i].label as String).split(',');
         }
         return GestureDetector(
             onTap: () {
@@ -348,11 +350,25 @@ class TextFieldSearchState extends State<TextFieldSearch> {
               FocusScope.of(context).unfocus();
             },
             child: ListTile(
+              leading: product.images != null && product.images!.isNotEmpty
+                  ? Image.network(
+                      product.images!.first,
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.broken_image),
+                    )
+                  : const Icon(Icons.image),
                 visualDensity: VisualDensity(vertical: -1),
                 dense: true,
-                subtitle: address.length >2 ? address.length>3 ? Text(address[1] + address[address.length - 2],style: TextStyle(fontSize: 11),) :Text(address[address.length - 2],style: TextStyle(fontSize: 11),) : Text(""),
+                selectedTileColor: Colors.grey[300],
+                subtitle: Text('\$${product.price ?? '0.00'}'),
+                // subtitle: listItemTitle.length >2 ? listItemTitle.length>3
+                //     ? Text(listItemTitle[1] + listItemTitle[listItemTitle.length - 2], style: TextStyle(fontSize: 11),)
+                //     : Text(listItemTitle[listItemTitle.length - 2], style: TextStyle(fontSize: 11),) : Text(""),
                 title: widget.getSelectedValue != null
-                    ? Text(address.first, style: TextStyle(fontSize: 14),)
+                    ? Text(listItemTitle.first, style: TextStyle(fontSize: 14),)
                     : Text(filteredList![i],style: TextStyle(fontSize: 14),)));
       },
       padding: EdgeInsets.zero,

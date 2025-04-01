@@ -9,8 +9,9 @@ import '../../Repositories/Search/product_search_repository.dart';
 
 class ProductBloc { // Build #1.0.13: Added Product Search Bloc
   final ProductRepository _productRepository;
-  final StreamController<APIResponse<List<ProductResponse>>> _productController =
-  StreamController<APIResponse<List<ProductResponse>>>.broadcast();
+  late StreamController<APIResponse<List<ProductResponse>>> _productController;
+  // = StreamController<APIResponse<List<ProductResponse>>>.broadcast();
+  StreamController<APIResponse<List<ProductResponse>>> get productController => _productController;
 
   StreamSink<APIResponse<List<ProductResponse>>> get productSink => _productController.sink;
   Stream<APIResponse<List<ProductResponse>>> get productStream => _productController.stream;
@@ -19,6 +20,8 @@ class ProductBloc { // Build #1.0.13: Added Product Search Bloc
     if (kDebugMode) {
       print("ProductBloc Initialized");
     }
+    _productController =
+    StreamController<APIResponse<List<ProductResponse>>>.broadcast();
   }
 
   Future<void> fetchProducts({String? searchQuery}) async {

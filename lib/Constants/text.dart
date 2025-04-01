@@ -74,6 +74,7 @@ class TextConstants { // Build #1.0.7 , Naveen - added TextConstants and SharedP
   static const String deleteConfirmText     = "Do you want to delete this tab permanently?";
   static const String noText                = "No";
   static const String yesText               = "Yes";
+  static const String retryText               = "Retry";
 
   static const String clearText             = "Clear";
   static const String okText                = "OK";

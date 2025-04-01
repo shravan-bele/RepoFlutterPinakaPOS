@@ -15,7 +15,7 @@ class PinakaPreferences { // Build #1.0.7 , Naveen - added PinakaPreferences cod
 
   // saveThemeMode
   Future<void> saveAppThemeMode(ThemeMode mode) async {
-    _prefs.setString(SharedPreferenceTextConstants.themeModeKey, mode.toString());
+    _prefs.setString(SharedPreferenceTextConstants.themeModeKey, mode.toString() ?? ThemeMode.light.toString() );
   }
 
   // Get ThemeMode from SharedPreferences

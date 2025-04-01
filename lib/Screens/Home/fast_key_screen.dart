@@ -40,9 +40,11 @@ class _FastKeyScreenState extends State<FastKeyScreen> {
 
     // Simulate a loading delay
     Future.delayed(const Duration(seconds: 3), () {
-      setState(() {
-        isLoading = false; // Set loading to false after 3 seconds
-      });
+      if(mounted) {
+        setState(() {
+          isLoading = false; // Set loading to false after 3 seconds
+        });
+      }
     });
   }
 
