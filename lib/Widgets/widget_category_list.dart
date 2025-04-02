@@ -164,7 +164,7 @@ class _CategoryListState extends State<CategoryList> {
         fastKeyProducts = fastKeyTabs.map((product) {
           return FastKeyModel(
             name: product[AppDBConst.fastKeyTabTitle],
-            itemCount: product[AppDBConst.fastKeyTabCount].toString(),
+            itemCount: product[AppDBConst.fastKeyTabItemCount].toString(),
             imageAsset: product[AppDBConst.fastKeyTabImage],
             id: product[AppDBConst.fastKeyId],
           );

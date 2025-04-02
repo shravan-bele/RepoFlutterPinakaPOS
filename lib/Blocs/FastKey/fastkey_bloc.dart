@@ -90,7 +90,8 @@ class FastKeyBloc { // Build #1.0.15
         var i = 0; ///@Naveen please correct this logic use tabid instead of i
         for(var fastkey in response.fastkeys){
           final updatedTab = {
-            AppDBConst.fastKeyTabTitle: fastkey.fastkeyTitle.toString()
+            AppDBConst.fastKeyTabTitle: fastkey.fastkeyTitle.toString(),
+            AppDBConst.fastKeyTabItemCount: fastkey.itemCount
           };
           fastKeyDBHelper.updateFastKeyTab(i++, updatedTab);
             //(userId, fastkey.fastkeyTitle, "", 0, int.parse(fastkey.fastkeyIndex));
