@@ -50,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
           _password[i] = value;
         });
         if (kDebugMode) {
-          print("Password updated: $_password");
+          print("Password updated : $_password");
         }
 
         // Auto-submit when 6 digits are entered
