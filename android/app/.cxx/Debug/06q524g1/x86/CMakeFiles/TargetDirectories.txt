@@ -1,0 +1,2 @@
+C:/RepoFlutterPinakaPOS/android/app/.cxx/Debug/06q524g1/x86/CMakeFiles/edit_cache.dir
+C:/RepoFlutterPinakaPOS/android/app/.cxx/Debug/06q524g1/x86/CMakeFiles/rebuild_cache.dir
